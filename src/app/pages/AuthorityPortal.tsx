@@ -5,6 +5,7 @@ import { PortalHeader } from '../components/shared/PortalHeader';
 import { StatusBadge, UrgencyBadge, CategoryBadge } from '../components/shared/StatusBadge';
 import { BeforeAfterModal } from '../components/shared/BeforeAfterModal';
 import { AssignedBadge } from '../components/shared/AssignedBadge';
+import { DuplicateBadge } from '../components/shared/DuplicateBadge';
 
 export default function AuthorityPortal() {
   const navigate = useNavigate();
@@ -124,7 +125,10 @@ export default function AuthorityPortal() {
                 {issues.filter(i => i.isSuspicious).map(issue => (
                   <div key={issue.id} className="flex items-center justify-between p-3 bg-white rounded-xl mb-2">
                     <div>
-                      <p className="text-sm" style={{ fontWeight: 500 }}>{issue.title}</p>
+                      <div className="flex items-center gap-2">
+                        <p className="text-sm" style={{ fontWeight: 500 }}>{issue.title}</p>
+                        <DuplicateBadge count={issue.duplicateCount} />
+                      </div>
                       <p className="text-xs text-gray-500">{issue.city} | 👎 {issue.downvotes} downvotes — May be incorrectly categorized</p>
                     </div>
                     <button onClick={() => setSelectedIssue(issue)}
@@ -155,7 +159,10 @@ export default function AuthorityPortal() {
                           <img src={issue.beforeImage} alt="" className="w-12 h-10 rounded-lg object-cover" />
                         </td>
                         <td className="py-3 pr-4" style={{ maxWidth: 200 }}>
-                          <p className="truncate" style={{ fontWeight: 500 }}>{issue.title}</p>
+                          <div className="flex items-center gap-2">
+                            <p className="truncate" style={{ fontWeight: 500 }}>{issue.title}</p>
+                            <DuplicateBadge count={issue.duplicateCount} />
+                          </div>
                         </td>
                         <td className="py-3 pr-4"><CategoryBadge category={issue.category} /></td>
                         <td className="py-3 pr-4 text-xs text-gray-500">{issue.city}, {issue.state}</td>
@@ -223,7 +230,10 @@ export default function AuthorityPortal() {
                           <img src={issue.beforeImage} alt="" className="w-14 h-11 rounded-xl object-cover" />
                         </td>
                         <td className="py-3 px-4" style={{ maxWidth: 200 }}>
-                          <p className="truncate" style={{ fontWeight: 500, color: '#0B1C2D' }}>{issue.title}</p>
+                          <div className="flex items-center gap-2">
+                            <p className="truncate" style={{ fontWeight: 500, color: '#0B1C2D' }}>{issue.title}</p>
+                            <DuplicateBadge count={issue.duplicateCount} />
+                          </div>
                           {issue.isSuspicious && <span className="text-xs text-red-600">⚠️ Suspicious</span>}
                         </td>
                         <td className="py-3 px-4"><CategoryBadge category={issue.category} /></td>
@@ -274,7 +284,10 @@ export default function AuthorityPortal() {
                         <UrgencyBadge urgency={issue.urgencyTag} />
                         <CategoryBadge category={issue.category} />
                       </div>
-                      <h3 className="truncate" style={{ color: '#0B1C2D', fontWeight: 600 }}>{issue.title}</h3>
+                      <div className="flex items-center gap-2">
+                        <h3 className="truncate" style={{ color: '#0B1C2D', fontWeight: 600 }}>{issue.title}</h3>
+                        <DuplicateBadge count={issue.duplicateCount} />
+                      </div>
                       <p className="text-gray-500 text-xs">📍 {issue.address}, {issue.city}</p>
                     </div>
                   </div>
@@ -342,7 +355,10 @@ export default function AuthorityPortal() {
                           <span className="px-2 py-1 rounded-full text-xs" style={{ background: '#FEF2F2', color: '#991B1B', border: '1px solid #FECACA', fontWeight: 600 }}>❌ Rejected</span>
                         )}
                       </div>
-                      <h3 style={{ fontWeight: 600, color: '#0B1C2D' }}>{issue.title}</h3>
+                      <div className="flex items-center gap-2">
+                        <h3 style={{ fontWeight: 600, color: '#0B1C2D' }}>{issue.title}</h3>
+                        <DuplicateBadge count={issue.duplicateCount} />
+                      </div>
                       <p className="text-gray-500 text-sm">🏢 NGO: <strong>{req.ngoName}</strong></p>
                       <p className="text-gray-500 text-xs">📍 {issue.city}, {issue.state} | 📅 {new Date(req.createdAt).toLocaleDateString('en-IN')}</p>
                     </div>
@@ -398,7 +414,10 @@ export default function AuthorityPortal() {
                 <CategoryBadge category={selectedIssue.category} />
               </div>
 
-              <h2 style={{ color: '#0B1C2D', fontWeight: 700 }}>{selectedIssue.title}</h2>
+              <div className="flex flex-wrap items-center gap-2">
+                <h2 style={{ color: '#0B1C2D', fontWeight: 700 }}>{selectedIssue.title}</h2>
+                <DuplicateBadge count={selectedIssue.duplicateCount} />
+              </div>
               <p className="text-gray-600 text-sm">{selectedIssue.description}</p>
               <p className="text-gray-500 text-sm">📍 {selectedIssue.address}, {selectedIssue.city}, {selectedIssue.state}</p>
 

@@ -1,5 +1,6 @@
 import React from 'react';
 import { Issue } from '../../context/AppContext';
+import { DuplicateBadge } from './DuplicateBadge';
 
 interface BeforeAfterModalProps {
   issue: Issue;
@@ -19,7 +20,10 @@ export function BeforeAfterModal({ issue, onClose }: BeforeAfterModalProps) {
         <div className="flex items-center justify-between px-6 py-4" style={{ background: '#0B1C2D' }}>
           <div>
             <h3 className="text-white" style={{ fontWeight: 700 }}>Before & After Comparison</h3>
-            <p className="text-blue-300 text-sm">{issue.title}</p>
+            <div className="flex items-center gap-2">
+              <p className="text-blue-300 text-sm">{issue.title}</p>
+              <DuplicateBadge count={issue.duplicateCount} />
+            </div>
           </div>
           <button onClick={onClose} className="text-white text-2xl hover:text-gray-300 transition-colors">×</button>
         </div>
@@ -55,6 +59,7 @@ export function BeforeAfterModal({ issue, onClose }: BeforeAfterModalProps) {
               <div><span className="font-medium">Category:</span> {issue.category}</div>
               <div><span className="font-medium">Status:</span> {issue.status.replaceAll('_', ' ')}</div>
               <div><span className="font-medium">Reported:</span> {new Date(issue.createdAt).toLocaleDateString('en-IN')}</div>
+              <div><span className="font-medium">Times Raised:</span> {issue.duplicateCount}x</div>
             </div>
           </div>
         </div>

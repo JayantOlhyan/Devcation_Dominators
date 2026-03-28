@@ -6,6 +6,7 @@ import { StatusBadge, UrgencyBadge, CategoryBadge } from '../components/shared/S
 import { BeforeAfterModal } from '../components/shared/BeforeAfterModal';
 import { AssignedBadge } from '../components/shared/AssignedBadge';
 import { DonationModal } from '../components/shared/DonationModal';
+import { DuplicateBadge } from '../components/shared/DuplicateBadge';
 
 const AFTER_IMAGES = {
   road: 'https://images.unsplash.com/photo-1645698406985-20f411b4937d?w=800&q=80',
@@ -130,7 +131,10 @@ export default function ContractorPortal() {
                           <UrgencyBadge urgency={issue.urgencyTag} />
                           <CategoryBadge category={issue.category} />
                         </div>
-                        <h3 className="mb-1" style={{ color: '#0B1C2D', fontWeight: 600 }}>{issue.title}</h3>
+                        <div className="mb-1 flex items-center gap-2">
+                          <h3 style={{ color: '#0B1C2D', fontWeight: 600 }}>{issue.title}</h3>
+                          <DuplicateBadge count={issue.duplicateCount} />
+                        </div>
                         <p className="text-gray-500 text-xs mb-1">📍 {issue.address}, {issue.city}, {issue.state}</p>
                         <p className="text-gray-600 text-sm line-clamp-2">{issue.description}</p>
                       </div>
@@ -204,7 +208,10 @@ export default function ContractorPortal() {
                             <StatusBadge status={issue.status} />
                             <CategoryBadge category={issue.category} />
                           </div>
-                          <h3 style={{ color: '#0B1C2D', fontWeight: 600 }}>{issue.title}</h3>
+                          <div className="flex items-center gap-2">
+                            <h3 style={{ color: '#0B1C2D', fontWeight: 600 }}>{issue.title}</h3>
+                            <DuplicateBadge count={issue.duplicateCount} />
+                          </div>
                           <p className="text-gray-500 text-xs">📍 {issue.city}, {issue.state}</p>
                           {myBid && <p className="text-green-600 text-sm mt-1" style={{ fontWeight: 600 }}>💰 Contract Value: ₹{myBid.bidAmount.toLocaleString('en-IN')}</p>}
                         </div>
@@ -341,7 +348,10 @@ export default function ContractorPortal() {
               <div className="flex gap-3 mb-4 p-3 rounded-xl" style={{ background: '#F8FAFC' }}>
                 <img src={selectedIssue.beforeImage} alt="" className="w-16 h-14 rounded-lg object-cover flex-shrink-0" />
                 <div>
-                  <p style={{ fontWeight: 600, color: '#0B1C2D', fontSize: '0.9rem' }}>{selectedIssue.title}</p>
+                  <div className="flex items-center gap-2">
+                    <p style={{ fontWeight: 600, color: '#0B1C2D', fontSize: '0.9rem' }}>{selectedIssue.title}</p>
+                    <DuplicateBadge count={selectedIssue.duplicateCount} />
+                  </div>
                   <p className="text-gray-500 text-xs">📍 {selectedIssue.city}, {selectedIssue.state}</p>
                   <div className="flex gap-1 mt-1"><CategoryBadge category={selectedIssue.category} /></div>
                 </div>

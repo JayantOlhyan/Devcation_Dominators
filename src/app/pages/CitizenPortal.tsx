@@ -8,6 +8,7 @@ import { StatusBadge, UrgencyBadge, CategoryBadge } from '../components/shared/S
 import { BeforeAfterModal } from '../components/shared/BeforeAfterModal';
 import { AssignedBadge } from '../components/shared/AssignedBadge';
 import { DonationModal } from '../components/shared/DonationModal';
+import { DuplicateBadge } from '../components/shared/DuplicateBadge';
 
 const STATES = ['Delhi', 'Maharashtra', 'Karnataka', 'Tamil Nadu', 'Gujarat', 'Rajasthan', 'Telangana', 'West Bengal', 'Uttar Pradesh', 'Madhya Pradesh'];
 const CATEGORIES = [
@@ -342,12 +343,13 @@ export default function CitizenPortal() {
       isRatingFrozen: false,
       flaggedReviewBatch: null,
       reviewEvents: [],
+      duplicateCount: 1,
       isSuspicious: false,
       isDuplicate: false,
       contractorRating: null,
       createdAt: new Date().toISOString(),
     };
-    addIssue(newIssue);
+    const issueResult = addIssue(newIssue);
     setFormData({ title: '', category: '', description: '', state: '', city: '', address: '', imagePreview: '' });
     setUploadedFile(null);
     setDetectedLocation(null);
@@ -356,7 +358,11 @@ export default function CitizenPortal() {
     autoLocationRequestedRef.current = false;
     setVoiceStatus('idle');
     setActiveTab('issues');
-    alert('✅ Issue submitted successfully! It will appear in the dashboard shortly.');
+    alert(
+      issueResult.merged
+        ? `Same issue already exists at this location. Raised count updated to ${issueResult.duplicateCount}x.`
+        : '✅ Issue submitted successfully! It will appear in the dashboard shortly.',
+    );
   };
 
   const sendMessage = () => {
@@ -455,7 +461,10 @@ export default function CitizenPortal() {
                         <UrgencyBadge urgency={issue.urgencyTag} />
                         <CategoryBadge category={issue.category} />
                       </div>
-                      <h3 className="mb-1 truncate" style={{ color: '#0B1C2D', fontWeight: 600, fontSize: '0.95rem' }}>{issue.title}</h3>
+                      <div className="mb-1 flex items-center gap-2 min-w-0">
+                        <h3 className="truncate" style={{ color: '#0B1C2D', fontWeight: 600, fontSize: '0.95rem' }}>{issue.title}</h3>
+                        <DuplicateBadge count={issue.duplicateCount} />
+                      </div>
                       <p className="text-gray-500 text-xs mb-2">📍 {issue.address}, {issue.city}, {issue.state}</p>
                       <p className="text-gray-600 text-sm line-clamp-1">{issue.description}</p>
                     </div>
@@ -842,7 +851,10 @@ export default function CitizenPortal() {
                 <UrgencyBadge urgency={selectedIssueDetails.urgencyTag} />
                 <CategoryBadge category={selectedIssueDetails.category} />
               </div>
-              <h2 style={{ color: '#0B1C2D', fontWeight: 700 }}>{selectedIssueDetails.title}</h2>
+              <div className="flex flex-wrap items-center gap-2">
+                <h2 style={{ color: '#0B1C2D', fontWeight: 700 }}>{selectedIssueDetails.title}</h2>
+                <DuplicateBadge count={selectedIssueDetails.duplicateCount} />
+              </div>
               <p className="text-gray-600 text-sm">{selectedIssueDetails.description}</p>
               <div className="grid grid-cols-2 gap-3 text-sm">
                 <div className="p-3 rounded-xl" style={{ background: '#F8FAFC' }}>
@@ -866,6 +878,10 @@ export default function CitizenPortal() {
                   <p style={{ fontWeight: 600, color: selectedIssueDetails.isRatingFrozen ? '#9A3412' : '#B45309' }}>
                     ⭐ {selectedIssueDetails.overallRatingScore.toFixed(1)}/5 {selectedIssueDetails.isRatingFrozen ? '(Frozen)' : ''}
                   </p>
+                </div>
+                <div className="p-3 rounded-xl" style={{ background: '#EFF6FF' }}>
+                  <p className="text-gray-400 text-xs">Times Raised</p>
+                  <p style={{ fontWeight: 600, color: '#1D4ED8' }}>{selectedIssueDetails.duplicateCount}x</p>
                 </div>
               </div>
 

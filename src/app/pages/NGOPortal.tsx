@@ -5,6 +5,7 @@ import { PortalHeader } from '../components/shared/PortalHeader';
 import { StatusBadge, UrgencyBadge, CategoryBadge } from '../components/shared/StatusBadge';
 import { BeforeAfterModal } from '../components/shared/BeforeAfterModal';
 import { AssignedBadge } from '../components/shared/AssignedBadge';
+import { DuplicateBadge } from '../components/shared/DuplicateBadge';
 import { PieChart, Pie, Cell, BarChart, Bar, XAxis, YAxis, Tooltip, ResponsiveContainer, Legend } from 'recharts';
 
 const COLORS = ['#0B1C2D', '#E8821C', '#22C55E', '#3B82F6', '#EF4444', '#8B5CF6'];
@@ -169,7 +170,10 @@ export default function NGOPortal() {
                           <UrgencyBadge urgency={issue.urgencyTag} />
                           <CategoryBadge category={issue.category} />
                         </div>
-                        <h3 style={{ color: '#0B1C2D', fontWeight: 600, fontSize: '0.95rem' }}>{issue.title}</h3>
+                        <div className="flex items-center gap-2">
+                          <h3 style={{ color: '#0B1C2D', fontWeight: 600, fontSize: '0.95rem' }}>{issue.title}</h3>
+                          <DuplicateBadge count={issue.duplicateCount} />
+                        </div>
                         <p className="text-gray-500 text-xs">📍 {issue.address}, {issue.city}, {issue.state}</p>
                         <p className="text-gray-600 text-sm mt-1 line-clamp-2">{issue.description}</p>
                       </div>
@@ -238,7 +242,10 @@ export default function NGOPortal() {
                             {req.status === 'approved' ? '✅ Approved' : req.status === 'rejected' ? '❌ Rejected' : '⏳ Pending'}
                           </span>
                         </div>
-                        <p style={{ fontWeight: 600, color: '#0B1C2D' }}>{issue.title}</p>
+                        <div className="flex items-center gap-2">
+                          <p style={{ fontWeight: 600, color: '#0B1C2D' }}>{issue.title}</p>
+                          <DuplicateBadge count={issue.duplicateCount} />
+                        </div>
                         <p className="text-gray-500 text-xs">📍 {issue.city}, {issue.state}</p>
                         <p className="text-gray-400 text-xs mt-1">Requested: {new Date(req.createdAt).toLocaleDateString('en-IN')}</p>
                       </div>

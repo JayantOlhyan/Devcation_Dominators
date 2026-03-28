@@ -61,6 +61,7 @@ export interface Issue {
   isRatingFrozen: boolean;
   flaggedReviewBatch: FlaggedReviewBatch | null;
   reviewEvents: IssueReviewEvent[];
+  duplicateCount: number;
   isSuspicious: boolean;
   isDuplicate: boolean;
   contractorRating: number | null;
@@ -105,6 +106,12 @@ export interface Comment {
   createdAt: string;
 }
 
+export interface AddIssueResult {
+  duplicateCount: number;
+  issueId: string;
+  merged: boolean;
+}
+
 const IMG_POTHOLE = 'https://images.unsplash.com/photo-1709934730506-fba12664d4e4?w=800&q=80';
 const IMG_WATER_PIPE = 'https://images.unsplash.com/photo-1639335875048-a14e75abc083?w=800&q=80';
 const IMG_STREETLIGHT = 'https://images.unsplash.com/photo-1640362790728-c2bd0dfa9f33?w=800&q=80';
@@ -117,6 +124,9 @@ const HOUR_MS = 60 * 60 * 1000;
 const DAY_MS = 24 * 60 * 60 * 1000;
 const REVIEW_SPIKE_MULTIPLIER = 10;
 const MIN_REVIEW_SPIKE_COUNT = 20;
+const DUPLICATE_CONTENT_THRESHOLD = 0.65;
+const DUPLICATE_ADDRESS_THRESHOLD = 0.6;
+const DUPLICATE_DISTANCE_THRESHOLD_KM = 0.35;
 
 const roundToSingleDecimal = (value: number) => Math.round(value * 10) / 10;
 
@@ -126,7 +136,9 @@ const calculateIssueRatingScore = (upvotes: number, downvotes: number) => {
   return roundToSingleDecimal((upvotes / totalVotes) * 5);
 };
 
-type IssueSeed = Omit<Issue, 'overallRatingScore' | 'isRatingFrozen' | 'flaggedReviewBatch' | 'reviewEvents'>;
+type IssueSeed = Omit<Issue, 'overallRatingScore' | 'isRatingFrozen' | 'flaggedReviewBatch' | 'reviewEvents' | 'duplicateCount'> & {
+  duplicateCount?: number;
+};
 
 const hydrateIssue = (issue: IssueSeed): Issue => ({
   ...issue,
@@ -134,7 +146,85 @@ const hydrateIssue = (issue: IssueSeed): Issue => ({
   isRatingFrozen: false,
   flaggedReviewBatch: null,
   reviewEvents: [],
+  duplicateCount: issue.duplicateCount ?? 1,
+  isDuplicate: issue.isDuplicate || (issue.duplicateCount ?? 1) > 1,
 });
+
+const normalizeText = (value: string) => value.toLowerCase().replace(/[^a-z0-9\s]/g, ' ').replace(/\s+/g, ' ').trim();
+
+const getTokenSet = (value: string) => new Set(normalizeText(value).split(' ').filter(token => token.length > 2));
+
+const calculateTokenSimilarity = (left: string, right: string) => {
+  const leftTokens = getTokenSet(left);
+  const rightTokens = getTokenSet(right);
+  if (leftTokens.size === 0 || rightTokens.size === 0) return 0;
+
+  const intersection = [...leftTokens].filter(token => rightTokens.has(token)).length;
+  const union = new Set([...leftTokens, ...rightTokens]).size;
+  return union === 0 ? 0 : intersection / union;
+};
+
+const toRadians = (value: number) => value * (Math.PI / 180);
+
+const calculateDistanceKm = (firstLat: number, firstLng: number, secondLat: number, secondLng: number) => {
+  const earthRadiusKm = 6371;
+  const deltaLat = toRadians(secondLat - firstLat);
+  const deltaLng = toRadians(secondLng - firstLng);
+  const latA = toRadians(firstLat);
+  const latB = toRadians(secondLat);
+  const haversine =
+    Math.sin(deltaLat / 2) * Math.sin(deltaLat / 2) +
+    Math.sin(deltaLng / 2) * Math.sin(deltaLng / 2) * Math.cos(latA) * Math.cos(latB);
+
+  return 2 * earthRadiusKm * Math.atan2(Math.sqrt(haversine), Math.sqrt(1 - haversine));
+};
+
+const isSameIssueLocation = (existingIssue: Issue, incomingIssue: Issue) => {
+  const sameState = normalizeText(existingIssue.state) === normalizeText(incomingIssue.state);
+  const sameCity = normalizeText(existingIssue.city) === normalizeText(incomingIssue.city);
+  if (!sameState || !sameCity) return false;
+
+  const hasCoordinates =
+    existingIssue.latitude !== undefined &&
+    existingIssue.longitude !== undefined &&
+    incomingIssue.latitude !== undefined &&
+    incomingIssue.longitude !== undefined;
+
+  if (hasCoordinates) {
+    const distanceKm = calculateDistanceKm(
+      existingIssue.latitude!,
+      existingIssue.longitude!,
+      incomingIssue.latitude!,
+      incomingIssue.longitude!,
+    );
+    if (distanceKm <= DUPLICATE_DISTANCE_THRESHOLD_KM) return true;
+  }
+
+  const addressSimilarity = calculateTokenSimilarity(existingIssue.address, incomingIssue.address);
+  return addressSimilarity >= DUPLICATE_ADDRESS_THRESHOLD;
+};
+
+const findDuplicateIssue = (issues: Issue[], incomingIssue: Issue) => {
+  let bestMatch: { issue: Issue; similarity: number } | null = null;
+
+  for (const issue of issues) {
+    if (issue.status === 'resolved') continue;
+    if (issue.category !== incomingIssue.category) continue;
+    if (!isSameIssueLocation(issue, incomingIssue)) continue;
+
+    const similarity = calculateTokenSimilarity(
+      `${issue.title} ${issue.description}`,
+      `${incomingIssue.title} ${incomingIssue.description}`,
+    );
+
+    if (similarity < DUPLICATE_CONTENT_THRESHOLD) continue;
+    if (!bestMatch || similarity > bestMatch.similarity) {
+      bestMatch = { issue, similarity };
+    }
+  }
+
+  return bestMatch?.issue ?? null;
+};
 
 const getReviewSpikeMetrics = (
   issue: Issue,
@@ -236,7 +326,7 @@ interface AppContextType {
   comments: Comment[];
   currentUser: AppUser | null;
   setCurrentUser: (user: AppUser | null) => void;
-  addIssue: (issue: Issue) => void;
+  addIssue: (issue: Issue) => AddIssueResult;
   updateIssueStatus: (issueId: string, status: IssueStatus) => void;
   updateAfterImage: (issueId: string, imageUrl: string) => void;
   submitResolutionProof: (issueId: string, imageUrl: string) => void;
@@ -263,7 +353,46 @@ export function AppProvider({ children }: { children: ReactNode }) {
   const [comments, setComments] = useState<Comment[]>(INITIAL_COMMENTS);
   const [currentUser, setCurrentUser] = useState<AppUser | null>(null);
 
-  const addIssue = useCallback((issue: Issue) => { setIssues(prev => [issue, ...prev]); }, []);
+  const addIssue = useCallback((issue: Issue) => {
+    let result: AddIssueResult = {
+      duplicateCount: issue.duplicateCount,
+      issueId: issue.id,
+      merged: false,
+    };
+
+    setIssues(prev => {
+      const duplicateIssue = findDuplicateIssue(prev, issue);
+      if (!duplicateIssue) {
+        result = {
+          duplicateCount: issue.duplicateCount,
+          issueId: issue.id,
+          merged: false,
+        };
+        return [issue, ...prev];
+      }
+
+      const nextDuplicateCount = duplicateIssue.duplicateCount + 1;
+      result = {
+        duplicateCount: nextDuplicateCount,
+        issueId: duplicateIssue.id,
+        merged: true,
+      };
+
+      return prev.map(existingIssue => {
+        if (existingIssue.id !== duplicateIssue.id) return existingIssue;
+        return {
+          ...existingIssue,
+          address: existingIssue.address.length >= issue.address.length ? existingIssue.address : issue.address,
+          latitude: existingIssue.latitude ?? issue.latitude,
+          longitude: existingIssue.longitude ?? issue.longitude,
+          duplicateCount: nextDuplicateCount,
+          isDuplicate: true,
+        };
+      });
+    });
+
+    return result;
+  }, []);
 
   const updateIssueStatus = useCallback((issueId: string, status: IssueStatus) => {
     setIssues(prev => prev.map(i => {
