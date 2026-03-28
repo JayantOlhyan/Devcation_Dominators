@@ -1,0 +1,93 @@
+import React from 'react';
+import { useNavigate } from 'react-router';
+import { useApp } from '../../context/AppContext';
+import { useLang, Language } from '../../context/LanguageContext';
+
+const LANGUAGES: { code: Language; label: string }[] = [
+  { code: 'en', label: 'EN' },
+  { code: 'hi', label: 'हि' },
+  { code: 'ta', label: 'த' },
+  { code: 'mr', label: 'म' },
+  { code: 'kn', label: 'ಕ' },
+];
+
+interface PortalHeaderProps {
+  title: string;
+  subtitle?: string;
+  onProfileClick?: () => void;
+}
+
+export function PortalHeader({ title, subtitle, onProfileClick }: PortalHeaderProps) {
+  const navigate = useNavigate();
+  const { currentUser, setCurrentUser } = useApp();
+  const { language, setLanguage, t } = useLang();
+
+  const roleEmojis: Record<string, string> = {
+    citizen: '👤', authority: '👨🏻‍💼', contractor: '👨🏻‍🔧', ngo: '👥',
+  };
+
+  const handleLogout = () => {
+    setCurrentUser(null);
+    navigate('/');
+  };
+
+  return (
+    <header className="sticky top-0 z-40 shadow-md" style={{ background: '#0B1C2D' }}>
+      <div className="max-w-7xl mx-auto px-4 py-3 flex items-center justify-between">
+        <div className="flex items-center gap-3">
+          <button onClick={() => navigate('/')} className="flex items-center gap-2 hover:opacity-80 transition-opacity">
+            <div className="w-8 h-8 rounded-full flex items-center justify-center" style={{ background: '#E8821C' }}>
+              <span className="text-white text-sm">🏛</span>
+            </div>
+            <span className="text-white tracking-widest uppercase hidden sm:block" style={{ fontWeight: 700, fontSize: '1.1rem', letterSpacing: '0.15em' }}>CIVICSETU</span>
+          </button>
+          <div className="w-px h-6 bg-white opacity-20 mx-1" />
+          <div>
+            <p className="text-white" style={{ fontWeight: 600, fontSize: '0.95rem' }}>{title}</p>
+            {subtitle && <p className="text-blue-300" style={{ fontSize: '0.7rem' }}>{subtitle}</p>}
+          </div>
+        </div>
+
+        <div className="flex items-center gap-2">
+          {/* Language Selector */}
+          <div className="hidden md:flex items-center gap-1">
+            {LANGUAGES.map(lang => (
+              <button
+                key={lang.code}
+                onClick={() => setLanguage(lang.code)}
+                className="px-2 py-0.5 rounded-full text-xs transition-all"
+                style={{
+                  background: language === lang.code ? '#E8821C' : 'rgba(255,255,255,0.1)',
+                  color: 'white',
+                  border: language === lang.code ? '1.5px solid #E8821C' : '1.5px solid rgba(255,255,255,0.2)',
+                  fontWeight: language === lang.code ? 600 : 400,
+                }}
+              >
+                {lang.label}
+              </button>
+            ))}
+          </div>
+
+          {currentUser && (
+            <button
+              onClick={onProfileClick}
+              className="flex items-center gap-2 px-3 py-1.5 rounded-xl transition-all hover:opacity-80"
+              style={{ background: 'rgba(255,255,255,0.1)', border: '1px solid rgba(255,255,255,0.2)' }}
+            >
+              <span className="text-lg">{roleEmojis[currentUser.role] || '👤'}</span>
+              <span className="text-white text-sm hidden sm:block">{currentUser.fullName.split(' ')[0]}</span>
+            </button>
+          )}
+
+          <button
+            onClick={handleLogout}
+            className="px-3 py-1.5 rounded-xl text-sm transition-all hover:opacity-80"
+            style={{ background: 'rgba(255,255,255,0.1)', color: 'white', border: '1px solid rgba(255,255,255,0.2)' }}
+          >
+            {t('nav.logout')}
+          </button>
+        </div>
+      </div>
+    </header>
+  );
+}

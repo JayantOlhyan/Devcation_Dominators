@@ -1,0 +1,485 @@
+import React, { useState, useEffect } from 'react';
+import { useNavigate } from 'react-router';
+import { useApp, Issue, NgoRequest, Donation } from '../context/AppContext';
+import { PortalHeader } from '../components/shared/PortalHeader';
+import { StatusBadge, UrgencyBadge, CategoryBadge } from '../components/shared/StatusBadge';
+import { BeforeAfterModal } from '../components/shared/BeforeAfterModal';
+import { AssignedBadge } from '../components/shared/AssignedBadge';
+import { PieChart, Pie, Cell, BarChart, Bar, XAxis, YAxis, Tooltip, ResponsiveContainer, Legend } from 'recharts';
+
+const COLORS = ['#0B1C2D', '#E8821C', '#22C55E', '#3B82F6', '#EF4444', '#8B5CF6'];
+
+export default function NGOPortal() {
+  const navigate = useNavigate();
+  const { currentUser, issues, ngoRequests, donations, addNgoRequest, addDonation } = useApp();
+  const [activeTab, setActiveTab] = useState<'issues' | 'requests' | 'analytics' | 'donations'>('issues');
+  const [filterState, setFilterState] = useState('all');
+  const [filterCat, setFilterCat] = useState('all');
+  const [filterStatus, setFilterStatus] = useState('all');
+  const [beforeAfterIssue, setBeforeAfterIssue] = useState<Issue | null>(null);
+  const [profileOpen, setProfileOpen] = useState(false);
+  const [donationModal, setDonationModal] = useState(false);
+  const [donationForm, setDonationForm] = useState({ name: '', amount: '', message: '', card: '4111 1111 1111 1111', expiry: '12/27', cvv: '***' });
+  const [donationSuccess, setDonationSuccess] = useState(false);
+
+  useEffect(() => { if (!currentUser) navigate('/'); }, [currentUser, navigate]);
+
+  const myRequests = ngoRequests.filter(r => r.ngoId === currentUser?.id);
+  const requestedIssueIds = new Set(myRequests.map(r => r.issueId));
+  const allStates = [...new Set(issues.map(i => i.state))];
+
+  const unresolvedIssues = issues.filter(i => {
+    // Apply status filter
+    if (filterStatus !== 'all') {
+      if (filterStatus === 'unresolved') {
+        if (i.status === 'resolved') return false;
+      } else if (i.status !== filterStatus) {
+        return false;
+      }
+    }
+    if (filterState !== 'all' && i.state !== filterState) return false;
+    if (filterCat !== 'all' && i.category !== filterCat) return false;
+    return true;
+  }).sort((a, b) => {
+    const o = { High: 0, Medium: 1, Low: 2 };
+    return o[a.urgencyTag] - o[b.urgencyTag];
+  });
+
+  const myDonations = donations.filter(d => d.ngoId === currentUser?.id);
+  const totalDonations = myDonations.reduce((sum, d) => sum + d.amount, 0);
+
+  const handleRaiseRequest = (issueId: string) => {
+    if (!currentUser) return;
+    if (requestedIssueIds.has(issueId)) { alert('You have already raised a request for this issue.'); return; }
+    const newReq: NgoRequest = {
+      id: 'nr-' + Date.now(),
+      issueId,
+      ngoId: currentUser.id,
+      ngoName: currentUser.ngoName || currentUser.fullName,
+      status: 'pending',
+      createdAt: new Date().toISOString(),
+    };
+    addNgoRequest(newReq);
+    alert('✅ Request raised successfully! Authority will review and respond shortly.');
+  };
+
+  const handleDonation = (e: React.FormEvent) => {
+    e.preventDefault();
+    if (!currentUser || !donationForm.name || !donationForm.amount) return;
+    const d: Donation = {
+      id: 'don-' + Date.now(),
+      ngoId: currentUser.id,
+      donorName: donationForm.name,
+      amount: parseFloat(donationForm.amount),
+      message: donationForm.message || 'Supporting civic improvement.',
+      createdAt: new Date().toISOString(),
+    };
+    addDonation(d);
+    setDonationSuccess(true);
+    setDonationForm({ name: '', amount: '', message: '', card: '4111 1111 1111 1111', expiry: '12/27', cvv: '***' });
+    setTimeout(() => { setDonationSuccess(false); setDonationModal(false); }, 2500);
+  };
+
+  // Analytics data
+  const catData = [
+    { name: 'Road', value: issues.filter(i => i.category === 'road').length, color: '#0B1C2D' },
+    { name: 'Water', value: issues.filter(i => i.category === 'water').length, color: '#3B82F6' },
+    { name: 'Electricity', value: issues.filter(i => i.category === 'electricity').length, color: '#F59E0B' },
+    { name: 'Sanitation', value: issues.filter(i => i.category === 'sanitation').length, color: '#22C55E' },
+  ];
+
+  const stateData = allStates.map(state => ({
+    state: state.substring(0, 8),
+    total: issues.filter(i => i.state === state).length,
+    unresolved: issues.filter(i => i.state === state && i.status !== 'resolved').length,
+  }));
+
+  const urgencyData = [
+    { name: 'High', value: issues.filter(i => i.urgencyTag === 'High' && i.status !== 'resolved').length, color: '#EF4444' },
+    { name: 'Medium', value: issues.filter(i => i.urgencyTag === 'Medium' && i.status !== 'resolved').length, color: '#F59E0B' },
+    { name: 'Low', value: issues.filter(i => i.urgencyTag === 'Low' && i.status !== 'resolved').length, color: '#22C55E' },
+  ];
+
+  const tabs = [
+    { key: 'issues', label: 'Unresolved Issues', emoji: '📋' },
+    { key: 'requests', label: 'My Requests', emoji: '📝' },
+    { key: 'analytics', label: 'Analytics', emoji: '📊' },
+    { key: 'donations', label: 'Donations', emoji: '💰' },
+  ];
+
+  if (!currentUser) return null;
+
+  return (
+    <div className="min-h-screen" style={{ background: '#F5F0E8', fontFamily: "'Poppins', sans-serif" }}>
+      <PortalHeader title="NGO Portal" subtitle={currentUser.ngoName || 'NGO'} onProfileClick={() => setProfileOpen(true)} />
+
+      {/* Tab Bar */}
+      <div className="sticky top-14 z-30 shadow-sm" style={{ background: '#fff', borderBottom: '1px solid #E2E8F0' }}>
+        <div className="max-w-6xl mx-auto flex overflow-x-auto">
+          {tabs.map(tab => (
+            <button key={tab.key} onClick={() => setActiveTab(tab.key as any)}
+              className="flex items-center gap-2 px-5 py-3.5 text-sm whitespace-nowrap transition-all"
+              style={{ color: activeTab === tab.key ? '#0B1C2D' : '#6B7280', borderBottom: activeTab === tab.key ? '3px solid #E8821C' : '3px solid transparent', fontWeight: activeTab === tab.key ? 600 : 400, background: 'transparent' }}>
+              <span>{tab.emoji}</span> {tab.label}
+            </button>
+          ))}
+        </div>
+      </div>
+
+      <div className="max-w-6xl mx-auto px-4 py-6">
+        {/* UNRESOLVED ISSUES */}
+        {activeTab === 'issues' && (
+          <div>
+            <div className="flex flex-wrap gap-3 mb-5">
+              <select className="px-3 py-2 rounded-xl text-sm border-2 outline-none" style={{ borderColor: '#E2E8F0', background: '#F8FAFC' }}
+                value={filterState} onChange={e => setFilterState(e.target.value)}>
+                <option value="all">All States</option>
+                {allStates.map(s => <option key={s} value={s}>{s}</option>)}
+              </select>
+              <select className="px-3 py-2 rounded-xl text-sm border-2 outline-none" style={{ borderColor: '#E2E8F0', background: '#F8FAFC' }}
+                value={filterCat} onChange={e => setFilterCat(e.target.value)}>
+                <option value="all">All Categories</option>
+                <option value="road">🛣️ Road</option>
+                <option value="water">💧 Water</option>
+                <option value="electricity">⚡ Electricity</option>
+                <option value="sanitation">🗑️ Sanitation</option>
+              </select>
+              <select className="px-3 py-2 rounded-xl text-sm border-2 outline-none" style={{ borderColor: '#E2E8F0', background: '#F8FAFC' }}
+                value={filterStatus} onChange={e => setFilterStatus(e.target.value)}>
+                <option value="all">All Statuses</option>
+                <option value="unresolved">⚠️ Unresolved</option>
+                <option value="resolved">✅ Resolved</option>
+              </select>
+              <div className="ml-auto text-sm text-gray-500 self-center">{unresolvedIssues.length} issues</div>
+            </div>
+
+            <div className="grid gap-4">
+              {unresolvedIssues.length === 0 && <div className="text-center py-16 text-gray-400">No unresolved issues found.</div>}
+              {unresolvedIssues.map(issue => {
+                const hasRequest = requestedIssueIds.has(issue.id);
+                const myReq = myRequests.find(r => r.issueId === issue.id);
+                return (
+                  <div key={issue.id} className="bg-white rounded-2xl shadow-sm overflow-hidden" style={{ border: '1px solid #E2E8F0' }}>
+                    <div className="flex gap-4 p-4">
+                      <img src={issue.beforeImage} alt="" className="w-24 h-20 rounded-xl object-cover flex-shrink-0" />
+                      <div className="flex-1 min-w-0">
+                        <div className="flex flex-wrap gap-2 mb-2">
+                          <StatusBadge status={issue.status} />
+                          <UrgencyBadge urgency={issue.urgencyTag} />
+                          <CategoryBadge category={issue.category} />
+                        </div>
+                        <h3 style={{ color: '#0B1C2D', fontWeight: 600, fontSize: '0.95rem' }}>{issue.title}</h3>
+                        <p className="text-gray-500 text-xs">📍 {issue.address}, {issue.city}, {issue.state}</p>
+                        <p className="text-gray-600 text-sm mt-1 line-clamp-2">{issue.description}</p>
+                      </div>
+                    </div>
+                    <div className="px-4 pb-4 flex items-center gap-3">
+                      <span className="text-xs text-gray-500">👍 {issue.upvotes} | 📅 {new Date(issue.createdAt).toLocaleDateString('en-IN')}</span>
+                      <button onClick={() => setBeforeAfterIssue(issue)}
+                        className="px-3 py-1.5 rounded-full text-xs" style={{ background: '#EFF6FF', color: '#1D4ED8' }}>
+                        🔍 B/A
+                      </button>
+                      {hasRequest ? (
+                        <span className={`ml-auto px-3 py-1.5 rounded-full text-xs font-medium`} style={{
+                          background: myReq?.status === 'approved' ? '#F0FDF4' : myReq?.status === 'rejected' ? '#FEF2F2' : '#FEF9C3',
+                          color: myReq?.status === 'approved' ? '#15803D' : myReq?.status === 'rejected' ? '#991B1B' : '#92400E',
+                        }}>
+                          {myReq?.status === 'approved' ? '✅ Approved' : myReq?.status === 'rejected' ? '❌ Rejected' : '⏳ Pending'}
+                        </span>
+                      ) : (
+                        <button onClick={() => handleRaiseRequest(issue.id)}
+                          className="ml-auto px-4 py-1.5 rounded-full text-sm text-white hover:opacity-90 transition-all"
+                          style={{ background: '#0B1C2D', fontWeight: 500 }}>
+                          🤝 Raise Request
+                        </button>
+                      )}
+                    </div>
+                  </div>
+                );
+              })}
+            </div>
+          </div>
+        )}
+
+        {/* MY REQUESTS */}
+        {activeTab === 'requests' && (
+          <div>
+            <div className="grid grid-cols-3 gap-4 mb-6">
+              {[
+                { label: 'Total Requests', value: myRequests.length, color: '#0B1C2D', bg: '#F8FAFC' },
+                { label: 'Approved', value: myRequests.filter(r => r.status === 'approved').length, color: '#15803D', bg: '#F0FDF4' },
+                { label: 'Pending', value: myRequests.filter(r => r.status === 'pending').length, color: '#B45309', bg: '#FFFBEB' },
+              ].map(s => (
+                <div key={s.label} className="rounded-2xl p-4 text-center shadow-sm" style={{ background: s.bg }}>
+                  <p style={{ fontSize: '2rem', fontWeight: 700, color: s.color }}>{s.value}</p>
+                  <p style={{ fontSize: '0.7rem', color: s.color, opacity: 0.8 }}>{s.label}</p>
+                </div>
+              ))}
+            </div>
+
+            <div className="space-y-4">
+              {myRequests.length === 0 && <div className="text-center py-16 text-gray-400">No requests raised yet. Browse unresolved issues to raise requests.</div>}
+              {myRequests.map(req => {
+                const issue = issues.find(i => i.id === req.issueId);
+                if (!issue) return null;
+                return (
+                  <div key={req.id} className="bg-white rounded-2xl shadow-sm p-5" style={{ border: req.status === 'pending' ? '2px solid #FDE68A' : '1px solid #E2E8F0' }}>
+                    <div className="flex gap-3">
+                      <img src={issue.beforeImage} alt="" className="w-20 h-16 rounded-xl object-cover flex-shrink-0" />
+                      <div className="flex-1">
+                        <div className="flex flex-wrap gap-2 mb-1.5">
+                          <CategoryBadge category={issue.category} />
+                          <span className={`px-2.5 py-1 rounded-full text-xs font-medium`} style={{
+                            background: req.status === 'approved' ? '#F0FDF4' : req.status === 'rejected' ? '#FEF2F2' : '#FEF9C3',
+                            color: req.status === 'approved' ? '#15803D' : req.status === 'rejected' ? '#991B1B' : '#92400E',
+                            border: `1px solid ${req.status === 'approved' ? '#BBF7D0' : req.status === 'rejected' ? '#FECACA' : '#FDE68A'}`,
+                          }}>
+                            {req.status === 'approved' ? '✅ Approved' : req.status === 'rejected' ? '❌ Rejected' : '⏳ Pending'}
+                          </span>
+                        </div>
+                        <p style={{ fontWeight: 600, color: '#0B1C2D' }}>{issue.title}</p>
+                        <p className="text-gray-500 text-xs">📍 {issue.city}, {issue.state}</p>
+                        <p className="text-gray-400 text-xs mt-1">Requested: {new Date(req.createdAt).toLocaleDateString('en-IN')}</p>
+                      </div>
+                    </div>
+                  </div>
+                );
+              })}
+            </div>
+          </div>
+        )}
+
+        {/* ANALYTICS */}
+        {activeTab === 'analytics' && (
+          <div className="space-y-6">
+            {/* Summary KPIs */}
+            <div className="grid grid-cols-2 sm:grid-cols-4 gap-4">
+              {[
+                { label: 'Total Issues', value: issues.length, icon: '📌', bg: '#EFF6FF', text: '#1D4ED8' },
+                { label: 'Unresolved', value: issues.filter(i => i.status !== 'resolved').length, icon: '⚠️', bg: '#FEF2F2', text: '#991B1B' },
+                { label: 'Resolved', value: issues.filter(i => i.status === 'resolved').length, icon: '✅', bg: '#F0FDF4', text: '#15803D' },
+                { label: 'NGO Participation', value: ngoRequests.filter(r => r.status === 'approved').length, icon: '🤝', bg: '#FFF7ED', text: '#C2410C' },
+              ].map(s => (
+                <div key={s.label} className="rounded-2xl p-4 text-center shadow-sm" style={{ background: s.bg }}>
+                  <div className="text-2xl mb-1">{s.icon}</div>
+                  <p style={{ fontSize: '2rem', fontWeight: 700, color: s.text, lineHeight: 1 }}>{s.value}</p>
+                  <p style={{ fontSize: '0.7rem', color: s.text, opacity: 0.8, marginTop: 4 }}>{s.label}</p>
+                </div>
+              ))}
+            </div>
+
+            <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
+              {/* Category Distribution */}
+              <div className="bg-white rounded-2xl p-5 shadow-sm" style={{ border: '1px solid #E2E8F0' }}>
+                <h3 className="mb-4" style={{ color: '#0B1C2D', fontWeight: 600 }}>📊 Category Distribution</h3>
+                <ResponsiveContainer width="100%" height={220}>
+                  <PieChart>
+                    <Pie data={catData} cx="50%" cy="50%" outerRadius={80} dataKey="value" label={({ name, value }) => `${name}: ${value}`} labelLine={false} fontSize={11}>
+                      {catData.map((entry) => <Cell key={`cat-${entry.name}`} fill={entry.color} />)}
+                    </Pie>
+                    <Tooltip formatter={(v: any) => [v, 'Issues']} />
+                  </PieChart>
+                </ResponsiveContainer>
+                <div className="flex flex-wrap gap-2 mt-2">
+                  {catData.map(c => (
+                    <span key={c.name} className="flex items-center gap-1 text-xs">
+                      <span className="w-3 h-3 rounded-full inline-block" style={{ background: c.color }} />
+                      {c.name} ({c.value})
+                    </span>
+                  ))}
+                </div>
+              </div>
+
+              {/* Urgency Distribution */}
+              <div className="bg-white rounded-2xl p-5 shadow-sm" style={{ border: '1px solid #E2E8F0' }}>
+                <h3 className="mb-4" style={{ color: '#0B1C2D', fontWeight: 600 }}>🚨 Urgency Distribution (Active)</h3>
+                <ResponsiveContainer width="100%" height={220}>
+                  <PieChart>
+                    <Pie data={urgencyData} cx="50%" cy="50%" outerRadius={80} dataKey="value" label={({ name, value }) => `${name}: ${value}`} labelLine={false} fontSize={11}>
+                      {urgencyData.map((entry) => <Cell key={`urgency-${entry.name}`} fill={entry.color} />)}
+                    </Pie>
+                    <Tooltip formatter={(v: any) => [v, 'Issues']} />
+                  </PieChart>
+                </ResponsiveContainer>
+                <div className="flex flex-wrap gap-3 mt-2">
+                  {urgencyData.map(u => (
+                    <span key={u.name} className="flex items-center gap-1 text-xs">
+                      <span className="w-3 h-3 rounded-full inline-block" style={{ background: u.color }} />
+                      {u.name} Urgency: {u.value}
+                    </span>
+                  ))}
+                </div>
+              </div>
+            </div>
+
+            {/* State Analytics */}
+            <div className="bg-white rounded-2xl p-5 shadow-sm" style={{ border: '1px solid #E2E8F0' }}>
+              <h3 className="mb-4" style={{ color: '#0B1C2D', fontWeight: 600 }}>🗺️ State-wise Issue Analytics</h3>
+              <ResponsiveContainer width="100%" height={260}>
+                <BarChart data={stateData} margin={{ top: 5, right: 20, left: 0, bottom: 5 }}>
+                  <XAxis dataKey="state" tick={{ fontSize: 11 }} />
+                  <YAxis tick={{ fontSize: 11 }} />
+                  <Tooltip />
+                  <Legend />
+                  <Bar dataKey="total" name="Total Issues" fill="#0B1C2D" radius={[4, 4, 0, 0]} />
+                  <Bar dataKey="unresolved" name="Unresolved" fill="#E8821C" radius={[4, 4, 0, 0]} />
+                </BarChart>
+              </ResponsiveContainer>
+            </div>
+
+            {/* NGO Participation */}
+            <div className="bg-white rounded-2xl p-5 shadow-sm" style={{ border: '1px solid #E2E8F0' }}>
+              <h3 className="mb-3" style={{ color: '#0B1C2D', fontWeight: 600 }}>🤝 NGO Participation Stats</h3>
+              <div className="grid grid-cols-2 sm:grid-cols-4 gap-3">
+                {[
+                  { label: 'Requests Raised', value: ngoRequests.length },
+                  { label: 'Approved', value: ngoRequests.filter(r => r.status === 'approved').length },
+                  { label: 'Pending', value: ngoRequests.filter(r => r.status === 'pending').length },
+                  { label: 'Rejected', value: ngoRequests.filter(r => r.status === 'rejected').length },
+                ].map(s => (
+                  <div key={s.label} className="p-3 rounded-xl text-center" style={{ background: '#F8FAFC' }}>
+                    <p style={{ fontSize: '1.5rem', fontWeight: 700, color: '#0B1C2D' }}>{s.value}</p>
+                    <p className="text-xs text-gray-500">{s.label}</p>
+                  </div>
+                ))}
+              </div>
+            </div>
+          </div>
+        )}
+
+        {/* DONATIONS */}
+        {activeTab === 'donations' && (
+          <div className="space-y-5">
+            {/* Total Donations Card */}
+            <div className="rounded-2xl p-6 shadow-sm" style={{ background: 'linear-gradient(135deg, #0B1C2D, #1E3A5F)' }}>
+              <div className="flex items-center justify-between">
+                <div>
+                  <p className="text-blue-200 text-sm">Total Donations Received</p>
+                  <p className="text-white" style={{ fontSize: '2.5rem', fontWeight: 800 }}>₹{totalDonations.toLocaleString('en-IN')}</p>
+                  <p className="text-blue-300 text-sm">{myDonations.length} contributions</p>
+                  <p className="text-blue-400 text-xs mt-2">💡 Citizens can donate via the home page</p>
+                </div>
+                <div className="text-6xl opacity-20">💰</div>
+              </div>
+            </div>
+
+            {/* Donation History */}
+            <div className="bg-white rounded-2xl shadow-sm p-5" style={{ border: '1px solid #E2E8F0' }}>
+              <h3 className="mb-4" style={{ color: '#0B1C2D', fontWeight: 600 }}>📜 Donation History</h3>
+              <div className="space-y-3">
+                {myDonations.map(d => (
+                  <div key={d.id} className="flex items-center gap-4 p-4 rounded-xl" style={{ background: '#F8FAFC', border: '1px solid #E2E8F0' }}>
+                    <div className="w-10 h-10 rounded-full flex items-center justify-center text-xl flex-shrink-0" style={{ background: '#FFF7ED' }}>💳</div>
+                    <div className="flex-1 min-w-0">
+                      <p style={{ fontWeight: 600, color: '#0B1C2D', fontSize: '0.9rem' }}>{d.donorName}</p>
+                      <p className="text-gray-500 text-xs line-clamp-1">{d.message}</p>
+                      <p className="text-gray-400 text-xs">{new Date(d.createdAt).toLocaleDateString('en-IN', { day: 'numeric', month: 'long', year: 'numeric' })}</p>
+                    </div>
+                    <p style={{ fontWeight: 700, color: '#15803D', fontSize: '1.1rem', flexShrink: 0 }}>₹{d.amount.toLocaleString('en-IN')}</p>
+                  </div>
+                ))}
+              </div>
+            </div>
+          </div>
+        )}
+      </div>
+
+      {beforeAfterIssue && <BeforeAfterModal issue={beforeAfterIssue} onClose={() => setBeforeAfterIssue(null)} />}
+
+      {/* Donation Modal */}
+      {donationModal && (
+        <div className="fixed inset-0 z-50 flex items-center justify-center p-4" style={{ background: 'rgba(0,0,0,0.7)' }}>
+          <div className="bg-white rounded-2xl shadow-2xl w-full max-w-md">
+            <div className="flex items-center justify-between p-5" style={{ background: '#0B1C2D' }}>
+              <div>
+                <h3 className="text-white" style={{ fontWeight: 700 }}>💰 Demo Donation</h3>
+                <p className="text-blue-300 text-xs">This is a demo — no real payment processed</p>
+              </div>
+              <button onClick={() => setDonationModal(false)} className="text-white text-2xl">×</button>
+            </div>
+            <div className="p-5">
+              {donationSuccess ? (
+                <div className="text-center py-8">
+                  <div className="text-6xl mb-4">🎉</div>
+                  <h3 style={{ color: '#15803D', fontWeight: 700 }}>Donation Successful!</h3>
+                  <p className="text-gray-500 text-sm mt-2">Thank you for supporting {currentUser.ngoName}!</p>
+                </div>
+              ) : (
+                <form onSubmit={handleDonation} className="space-y-4">
+                  <div className="p-3 rounded-xl text-xs text-center" style={{ background: '#FFF7ED', color: '#92400E', border: '1px solid #FED7AA' }}>
+                    ⚠️ DEMO ONLY — No real payment will be processed
+                  </div>
+                  <div>
+                    <label className="block text-sm mb-1.5" style={{ fontWeight: 500 }}>Donor Name</label>
+                    <input required className="w-full px-4 py-2.5 rounded-xl border-2 outline-none" style={{ borderColor: '#E2E8F0', background: '#F8FAFC' }}
+                      placeholder="Your name" value={donationForm.name} onChange={e => setDonationForm(p => ({ ...p, name: e.target.value }))} />
+                  </div>
+                  <div>
+                    <label className="block text-sm mb-1.5" style={{ fontWeight: 500 }}>Amount (₹)</label>
+                    <div className="flex gap-2 mb-2">
+                      {[500, 1000, 5000, 10000].map(amt => (
+                        <button key={amt} type="button" onClick={() => setDonationForm(p => ({ ...p, amount: amt.toString() }))}
+                          className="flex-1 py-1.5 rounded-lg text-xs transition-all"
+                          style={{ background: donationForm.amount === amt.toString() ? '#0B1C2D' : '#F1F5F9', color: donationForm.amount === amt.toString() ? 'white' : '#374151', fontWeight: 500 }}>
+                          ₹{amt.toLocaleString()}
+                        </button>
+                      ))}
+                    </div>
+                    <input required type="number" min="1" className="w-full px-4 py-2.5 rounded-xl border-2 outline-none" style={{ borderColor: '#E2E8F0', background: '#F8FAFC' }}
+                      placeholder="Or enter custom amount" value={donationForm.amount} onChange={e => setDonationForm(p => ({ ...p, amount: e.target.value }))} />
+                  </div>
+                  <div>
+                    <label className="block text-sm mb-1.5" style={{ fontWeight: 500 }}>Card Number (Demo)</label>
+                    <input readOnly className="w-full px-4 py-2.5 rounded-xl border-2 outline-none" style={{ borderColor: '#E2E8F0', background: '#F0F0F0', fontFamily: 'monospace', color: '#6B7280' }}
+                      value={donationForm.card} />
+                  </div>
+                  <div className="grid grid-cols-2 gap-3">
+                    <div>
+                      <label className="block text-sm mb-1.5" style={{ fontWeight: 500 }}>Expiry</label>
+                      <input readOnly className="w-full px-4 py-2.5 rounded-xl border-2 outline-none" style={{ borderColor: '#E2E8F0', background: '#F0F0F0', color: '#6B7280' }} value={donationForm.expiry} />
+                    </div>
+                    <div>
+                      <label className="block text-sm mb-1.5" style={{ fontWeight: 500 }}>CVV</label>
+                      <input readOnly className="w-full px-4 py-2.5 rounded-xl border-2 outline-none" style={{ borderColor: '#E2E8F0', background: '#F0F0F0', color: '#6B7280' }} value={donationForm.cvv} />
+                    </div>
+                  </div>
+                  <div>
+                    <label className="block text-sm mb-1.5" style={{ fontWeight: 500 }}>Message (optional)</label>
+                    <input className="w-full px-4 py-2.5 rounded-xl border-2 outline-none" style={{ borderColor: '#E2E8F0', background: '#F8FAFC' }}
+                      placeholder="Supporting civic improvement..." value={donationForm.message} onChange={e => setDonationForm(p => ({ ...p, message: e.target.value }))} />
+                  </div>
+                  <button type="submit" className="w-full py-3.5 rounded-xl text-white hover:opacity-90 transition-all" style={{ background: '#0B1C2D', fontWeight: 600 }}>
+                    💰 Donate ₹{donationForm.amount ? parseInt(donationForm.amount).toLocaleString('en-IN') : '0'} (Demo)
+                  </button>
+                </form>
+              )}
+            </div>
+          </div>
+        </div>
+      )}
+
+      {/* Profile Modal */}
+      {profileOpen && (
+        <div className="fixed inset-0 z-50 flex items-center justify-center p-4" style={{ background: 'rgba(0,0,0,0.5)' }}>
+          <div className="bg-white rounded-2xl shadow-2xl p-6 w-full max-w-sm">
+            <div className="flex items-center justify-between mb-4">
+              <h3 style={{ color: '#0B1C2D', fontWeight: 700 }}>NGO Profile</h3>
+              <button onClick={() => setProfileOpen(false)} className="text-gray-400 text-xl">×</button>
+            </div>
+            <div className="text-center mb-4">
+              <div className="text-5xl mb-2">👥</div>
+              <p style={{ fontWeight: 700, color: '#0B1C2D' }}>{currentUser.ngoName}</p>
+              <p className="text-sm text-gray-500">{currentUser.fullName}</p>
+              <p className="text-xs text-gray-400">{currentUser.email}</p>
+              <p className="text-xs text-gray-400 mt-1" style={{ fontFamily: 'monospace' }}>{currentUser.registrationId}</p>
+            </div>
+            <div className="p-4 rounded-xl text-center" style={{ background: '#F0FDF4' }}>
+              <p className="text-sm text-green-700">⭐ Platform Rating: {currentUser.rating}/5.0</p>
+              <p className="text-xs text-green-600 mt-1">Total Donations: ₹{totalDonations.toLocaleString('en-IN')}</p>
+            </div>
+          </div>
+        </div>
+      )}
+    </div>
+  );
+}
