@@ -4,6 +4,7 @@ export type IssueCategory = 'water' | 'road' | 'electricity' | 'sanitation';
 export type IssueStatus = 'open_for_bidding' | 'in_progress' | 'awaiting_citizen_verification' | 'resolved';
 export type UrgencyTag = 'High' | 'Medium' | 'Low';
 export type UserRole = 'citizen' | 'authority' | 'contractor' | 'ngo';
+export type VoteType = 'upvote' | 'downvote';
 
 export interface AppUser {
   id: string;
@@ -18,6 +19,23 @@ export interface AppUser {
   city?: string;
   registrationId?: string;
   rating?: number;
+}
+
+export interface IssueReviewEvent {
+  id: string;
+  type: VoteType;
+  createdAt: string;
+}
+
+export interface FlaggedReviewBatch {
+  id: string;
+  reviewIds: string[];
+  windowStartedAt: string;
+  windowEndedAt: string;
+  reviewsInBatch: number;
+  expectedDailyReviews: number;
+  triggerThreshold: number;
+  frozenScore: number;
 }
 
 export interface Issue {
@@ -39,6 +57,10 @@ export interface Issue {
   urgencyTag: UrgencyTag;
   upvotes: number;
   downvotes: number;
+  overallRatingScore: number;
+  isRatingFrozen: boolean;
+  flaggedReviewBatch: FlaggedReviewBatch | null;
+  reviewEvents: IssueReviewEvent[];
   isSuspicious: boolean;
   isDuplicate: boolean;
   contractorRating: number | null;
@@ -91,6 +113,57 @@ const IMG_ROAD_AFTER = 'https://images.unsplash.com/photo-1645698406985-20f411b4
 const IMG_WATER_AFTER = 'https://images.unsplash.com/photo-1769263092692-8bdce7a125de?w=800&q=80';
 const IMG_LIGHT_AFTER = 'https://images.unsplash.com/photo-1694408614727-0a05c1019777?w=800&q=80';
 
+const HOUR_MS = 60 * 60 * 1000;
+const DAY_MS = 24 * 60 * 60 * 1000;
+const REVIEW_SPIKE_MULTIPLIER = 10;
+const MIN_REVIEW_SPIKE_COUNT = 20;
+
+const roundToSingleDecimal = (value: number) => Math.round(value * 10) / 10;
+
+const calculateIssueRatingScore = (upvotes: number, downvotes: number) => {
+  const totalVotes = upvotes + downvotes;
+  if (totalVotes === 0) return 0;
+  return roundToSingleDecimal((upvotes / totalVotes) * 5);
+};
+
+type IssueSeed = Omit<Issue, 'overallRatingScore' | 'isRatingFrozen' | 'flaggedReviewBatch' | 'reviewEvents'>;
+
+const hydrateIssue = (issue: IssueSeed): Issue => ({
+  ...issue,
+  overallRatingScore: calculateIssueRatingScore(issue.upvotes, issue.downvotes),
+  isRatingFrozen: false,
+  flaggedReviewBatch: null,
+  reviewEvents: [],
+});
+
+const getReviewSpikeMetrics = (
+  issue: Issue,
+  nextReviewEvents: IssueReviewEvent[],
+  nextUpvotes: number,
+  nextDownvotes: number,
+  referenceTime: string,
+) => {
+  const referenceMs = new Date(referenceTime).getTime();
+  const recentReviewEvents = nextReviewEvents.filter(review => referenceMs - new Date(review.createdAt).getTime() <= HOUR_MS);
+  const recentReviewCount = recentReviewEvents.length;
+  const totalReviews = nextUpvotes + nextDownvotes;
+  const issueAgeMs = Math.max(referenceMs - new Date(issue.createdAt).getTime(), DAY_MS);
+  const historicalAgeDays = Math.max((issueAgeMs - HOUR_MS) / DAY_MS, 1);
+  const historicalReviewCount = Math.max(totalReviews - recentReviewCount, 0);
+  const expectedDailyReviews = historicalReviewCount / historicalAgeDays;
+  const triggerThreshold = Math.max(MIN_REVIEW_SPIKE_COUNT, Math.ceil(Math.max(expectedDailyReviews, 1) * REVIEW_SPIKE_MULTIPLIER));
+
+  return {
+    recentReviewEvents,
+    recentReviewCount,
+    expectedDailyReviews: roundToSingleDecimal(expectedDailyReviews),
+    triggerThreshold,
+    shouldFreeze: recentReviewCount >= triggerThreshold,
+  };
+};
+
+const createReviewEventId = () => `review-${Date.now()}-${Math.random().toString(36).slice(2, 8)}`;
+
 // Helper function to generate dates in 2026
 const getDate2026 = (month: number, day: number, hour: number = 10, minute: number = 0) => {
   return new Date(2026, month - 1, day, hour, minute, 0).toISOString();
@@ -103,7 +176,7 @@ export const MOCK_USERS: AppUser[] = [
   { id: 'u4', fullName: 'Meena Joshi', email: 'meena@greenindia.org', phone: '+91 80 4567 8901', role: 'ngo', ngoName: 'Green India Foundation', registrationId: 'NGO-REG-2026-0077', rating: 4.7, state: 'Karnataka', city: 'Bangalore' },
 ];
 
-const INITIAL_ISSUES: Issue[] = [
+const ISSUE_SEEDS: IssueSeed[] = [
   { id: 'i1', title: 'Deep Pothole on MG Road', description: 'A large pothole near Connaught Place causing accidents. Multiple vehicles damaged. Requires urgent RCC repair.', category: 'road', status: 'resolved', state: 'Delhi', city: 'New Delhi', address: 'MG Road, near Connaught Place', createdBy: 'u1', assignedContractor: 'u3', assignedNgo: null, beforeImage: IMG_POTHOLE, afterImage: IMG_ROAD_AFTER, urgencyTag: 'High', upvotes: 34, downvotes: 2, isSuspicious: false, isDuplicate: false, contractorRating: 4, createdAt: getDate2026(1, 15, 10, 0) },
   { id: 'i2', title: 'Garbage Pile at Dadar Market', description: 'Massive garbage accumulation near Dadar vegetable market causing health hazards and foul smell in the entire locality.', category: 'sanitation', status: 'resolved', state: 'Maharashtra', city: 'Mumbai', address: 'Near Dadar Vegetable Market, Dadar West', createdBy: 'u1', assignedContractor: null, assignedNgo: 'u4', beforeImage: IMG_GARBAGE, afterImage: IMG_WATER_AFTER, urgencyTag: 'High', upvotes: 28, downvotes: 1, isSuspicious: false, isDuplicate: false, contractorRating: 5, createdAt: getDate2026(1, 20, 8, 30) },
   { id: 'i3', title: 'Water Pipe Burst near Whitefield Metro', description: 'A major water supply pipe burst near Whitefield Metro Station causing waterlogging and supply disruption in 3 residential blocks.', category: 'water', status: 'resolved', state: 'Karnataka', city: 'Bangalore', address: 'Near Whitefield Metro Station, Whitefield', createdBy: 'u1', assignedContractor: 'u3', assignedNgo: null, beforeImage: IMG_WATER_PIPE, afterImage: IMG_WATER_AFTER, urgencyTag: 'High', upvotes: 45, downvotes: 0, isSuspicious: false, isDuplicate: false, contractorRating: 4, createdAt: getDate2026(1, 25, 12, 0) },
@@ -121,6 +194,8 @@ const INITIAL_ISSUES: Issue[] = [
   { id: 'i15', title: 'Sewage Leak near Government School', description: 'Underground sewage line cracked near Rajasthan Government School. Contaminated water seeping into school premises.', category: 'water', status: 'open_for_bidding', state: 'Rajasthan', city: 'Jaipur', address: 'Near Rajasthan Government School, Vaishali Nagar', createdBy: 'u1', assignedContractor: null, assignedNgo: null, beforeImage: IMG_WATER_PIPE, afterImage: null, urgencyTag: 'High', upvotes: 156, downvotes: 2, isSuspicious: false, isDuplicate: false, contractorRating: null, createdAt: getDate2026(3, 15, 10, 30) },
   { id: 'i16', title: 'Street Lamp Out near Safdarjung Hospital', description: 'All street lamps on 300m stretch near Safdarjung Hospital night entry have failed. Night staff and patients face safety issues.', category: 'electricity', status: 'open_for_bidding', state: 'Delhi', city: 'New Delhi', address: 'Safdarjung Hospital Road, South Extension', createdBy: 'u1', assignedContractor: null, assignedNgo: null, beforeImage: IMG_STREETLIGHT, afterImage: null, urgencyTag: 'High', upvotes: 134, downvotes: 4, isSuspicious: false, isDuplicate: false, contractorRating: null, createdAt: getDate2026(3, 18, 9, 0) },
 ];
+
+const INITIAL_ISSUES: Issue[] = ISSUE_SEEDS.map(hydrateIssue);
 
 const INITIAL_BIDS: Bid[] = [
   { id: 'b1', issueId: 'i1', contractorId: 'u3', contractorName: 'BuildTech Solutions', bidAmount: 50000, proposalNote: 'Will repair using M30 grade concrete with proper drainage. 5-day completion guarantee.', status: 'selected', createdAt: getDate2026(1, 16, 10, 0) },
@@ -170,7 +245,8 @@ interface AppContextType {
   selectBid: (bidId: string, issueId: string, contractorId: string) => void;
   addNgoRequest: (request: NgoRequest) => void;
   updateNgoRequest: (requestId: string, ngoId: string, issueId: string, status: 'approved' | 'rejected') => void;
-  voteOnIssue: (issueId: string, voteType: 'upvote' | 'downvote') => void;
+  voteOnIssue: (issueId: string, voteType: VoteType) => void;
+  reviewFlaggedBatch: (issueId: string, decision: 'approve' | 'reject') => void;
   addComment: (comment: Comment) => void;
   addDonation: (donation: Donation) => void;
   rateContractor: (issueId: string, rating: number) => void;
@@ -188,6 +264,7 @@ export function AppProvider({ children }: { children: ReactNode }) {
   const [currentUser, setCurrentUser] = useState<AppUser | null>(null);
 
   const addIssue = useCallback((issue: Issue) => { setIssues(prev => [issue, ...prev]); }, []);
+
   const updateIssueStatus = useCallback((issueId: string, status: IssueStatus) => {
     setIssues(prev => prev.map(i => {
       if (i.id !== issueId) return i;
@@ -196,13 +273,19 @@ export function AppProvider({ children }: { children: ReactNode }) {
       return { ...i, status };
     }));
   }, []);
-  const updateAfterImage = useCallback((issueId: string, imageUrl: string) => { setIssues(prev => prev.map(i => i.id === issueId ? { ...i, afterImage: imageUrl } : i)); }, []);
+
+  const updateAfterImage = useCallback((issueId: string, imageUrl: string) => {
+    setIssues(prev => prev.map(i => i.id === issueId ? { ...i, afterImage: imageUrl } : i));
+  }, []);
+
   const submitResolutionProof = useCallback((issueId: string, imageUrl: string) => {
     setIssues(prev => prev.map(i => i.id === issueId ? { ...i, afterImage: imageUrl, status: 'awaiting_citizen_verification' } : i));
   }, []);
+
   const verifyIssueResolution = useCallback((issueId: string, isVerified: boolean) => {
     setIssues(prev => prev.map(i => i.id === issueId ? { ...i, status: isVerified ? 'resolved' : 'in_progress' } : i));
   }, []);
+
   const addBid = useCallback((bid: Bid) => { setBids(prev => [bid, ...prev]); }, []);
 
   const selectBid = useCallback((bidId: string, issueId: string, contractorId: string) => {
@@ -219,21 +302,116 @@ export function AppProvider({ children }: { children: ReactNode }) {
     }
   }, []);
 
-  const voteOnIssue = useCallback((issueId: string, voteType: 'upvote' | 'downvote') => {
-    setIssues(prev => prev.map(i => {
-      if (i.id !== issueId) return i;
-      const updated = { ...i, upvotes: voteType === 'upvote' ? i.upvotes + 1 : i.upvotes, downvotes: voteType === 'downvote' ? i.downvotes + 1 : i.downvotes };
-      updated.isSuspicious = updated.downvotes >= 6;
-      return updated;
+  const voteOnIssue = useCallback((issueId: string, voteType: VoteType) => {
+    setIssues(prev => prev.map(issue => {
+      if (issue.id !== issueId) return issue;
+
+      const createdAt = new Date().toISOString();
+      const reviewEvent: IssueReviewEvent = {
+        id: createReviewEventId(),
+        type: voteType,
+        createdAt,
+      };
+      const nextUpvotes = voteType === 'upvote' ? issue.upvotes + 1 : issue.upvotes;
+      const nextDownvotes = voteType === 'downvote' ? issue.downvotes + 1 : issue.downvotes;
+      const nextReviewEvents = [...issue.reviewEvents, reviewEvent];
+      const nextIsSuspicious = nextDownvotes >= 6;
+
+      if (issue.isRatingFrozen && issue.flaggedReviewBatch) {
+        const reviewIds = issue.flaggedReviewBatch.reviewIds.includes(reviewEvent.id)
+          ? issue.flaggedReviewBatch.reviewIds
+          : [...issue.flaggedReviewBatch.reviewIds, reviewEvent.id];
+
+        return {
+          ...issue,
+          upvotes: nextUpvotes,
+          downvotes: nextDownvotes,
+          isSuspicious: nextIsSuspicious,
+          reviewEvents: nextReviewEvents,
+          flaggedReviewBatch: {
+            ...issue.flaggedReviewBatch,
+            reviewIds,
+            reviewsInBatch: reviewIds.length,
+            windowEndedAt: createdAt,
+          },
+        };
+      }
+
+      const spikeMetrics = getReviewSpikeMetrics(issue, nextReviewEvents, nextUpvotes, nextDownvotes, createdAt);
+      if (spikeMetrics.shouldFreeze) {
+        return {
+          ...issue,
+          upvotes: nextUpvotes,
+          downvotes: nextDownvotes,
+          isSuspicious: nextIsSuspicious,
+          isRatingFrozen: true,
+          reviewEvents: nextReviewEvents,
+          flaggedReviewBatch: {
+            id: `batch-${issue.id}-${Date.now()}`,
+            reviewIds: spikeMetrics.recentReviewEvents.map(review => review.id),
+            windowStartedAt: spikeMetrics.recentReviewEvents[0]?.createdAt || createdAt,
+            windowEndedAt: createdAt,
+            reviewsInBatch: spikeMetrics.recentReviewCount,
+            expectedDailyReviews: spikeMetrics.expectedDailyReviews,
+            triggerThreshold: spikeMetrics.triggerThreshold,
+            frozenScore: issue.overallRatingScore,
+          },
+        };
+      }
+
+      return {
+        ...issue,
+        upvotes: nextUpvotes,
+        downvotes: nextDownvotes,
+        isSuspicious: nextIsSuspicious,
+        reviewEvents: nextReviewEvents,
+        overallRatingScore: calculateIssueRatingScore(nextUpvotes, nextDownvotes),
+      };
+    }));
+  }, []);
+
+  const reviewFlaggedBatch = useCallback((issueId: string, decision: 'approve' | 'reject') => {
+    setIssues(prev => prev.map(issue => {
+      if (issue.id !== issueId || !issue.flaggedReviewBatch) return issue;
+
+      if (decision === 'approve') {
+        return {
+          ...issue,
+          isRatingFrozen: false,
+          overallRatingScore: calculateIssueRatingScore(issue.upvotes, issue.downvotes),
+          flaggedReviewBatch: null,
+        };
+      }
+
+      const flaggedReviewIds = new Set(issue.flaggedReviewBatch.reviewIds);
+      const rejectedReviews = issue.reviewEvents.filter(review => flaggedReviewIds.has(review.id));
+      const remainingReviewEvents = issue.reviewEvents.filter(review => !flaggedReviewIds.has(review.id));
+      const rejectedUpvotes = rejectedReviews.filter(review => review.type === 'upvote').length;
+      const rejectedDownvotes = rejectedReviews.filter(review => review.type === 'downvote').length;
+      const nextUpvotes = Math.max(0, issue.upvotes - rejectedUpvotes);
+      const nextDownvotes = Math.max(0, issue.downvotes - rejectedDownvotes);
+
+      return {
+        ...issue,
+        upvotes: nextUpvotes,
+        downvotes: nextDownvotes,
+        isSuspicious: nextDownvotes >= 6,
+        overallRatingScore: calculateIssueRatingScore(nextUpvotes, nextDownvotes),
+        isRatingFrozen: false,
+        flaggedReviewBatch: null,
+        reviewEvents: remainingReviewEvents,
+      };
     }));
   }, []);
 
   const addComment = useCallback((comment: Comment) => { setComments(prev => [...prev, comment]); }, []);
   const addDonation = useCallback((donation: Donation) => { setDonations(prev => [donation, ...prev]); }, []);
-  const rateContractor = useCallback((issueId: string, rating: number) => { setIssues(prev => prev.map(i => i.id === issueId ? { ...i, contractorRating: rating } : i)); }, []);
+  const rateContractor = useCallback((issueId: string, rating: number) => {
+    setIssues(prev => prev.map(i => i.id === issueId ? { ...i, contractorRating: rating } : i));
+  }, []);
 
   return (
-    <AppContext.Provider value={{ users, issues, bids, ngoRequests, donations, comments, currentUser, setCurrentUser, addIssue, updateIssueStatus, updateAfterImage, submitResolutionProof, verifyIssueResolution, addBid, selectBid, addNgoRequest, updateNgoRequest, voteOnIssue, addComment, addDonation, rateContractor }}>
+    <AppContext.Provider value={{ users, issues, bids, ngoRequests, donations, comments, currentUser, setCurrentUser, addIssue, updateIssueStatus, updateAfterImage, submitResolutionProof, verifyIssueResolution, addBid, selectBid, addNgoRequest, updateNgoRequest, voteOnIssue, reviewFlaggedBatch, addComment, addDonation, rateContractor }}>
       {children}
     </AppContext.Provider>
   );

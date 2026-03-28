@@ -235,6 +235,7 @@ export default function CitizenPortal() {
   }, []);
 
   const myIssues = issues.filter(i => i.createdBy === currentUser?.id);
+  const selectedIssueDetails = selectedIssue ? issues.find(issue => issue.id === selectedIssue.id) ?? selectedIssue : null;
   const filteredIssues = myIssues.filter(i => {
     if (filterStatus !== 'all') {
       if (filterStatus === 'unresolved') {
@@ -337,6 +338,10 @@ export default function CitizenPortal() {
       urgencyTag: 'Medium',
       upvotes: 1,
       downvotes: 0,
+      overallRatingScore: 5,
+      isRatingFrozen: false,
+      flaggedReviewBatch: null,
+      reviewEvents: [],
       isSuspicious: false,
       isDuplicate: false,
       contractorRating: null,
@@ -429,10 +434,15 @@ export default function CitizenPortal() {
                 <div className="text-center py-16 text-gray-400">{t('citizen.issues.noIssues')}</div>
               )}
               {filteredIssues.map(issue => (
-                <div key={issue.id} className="bg-white rounded-2xl shadow-sm overflow-hidden transition-all hover:shadow-md" style={{ border: issue.isSuspicious ? '2px solid #FCA5A5' : '1px solid #E2E8F0' }}>
+                <div key={issue.id} className="bg-white rounded-2xl shadow-sm overflow-hidden transition-all hover:shadow-md" style={{ border: issue.isRatingFrozen ? '2px solid #F59E0B' : issue.isSuspicious ? '2px solid #FCA5A5' : '1px solid #E2E8F0' }}>
                   {issue.isSuspicious && (
                     <div className="px-4 py-2 text-xs" style={{ background: '#FEF2F2', color: '#991B1B' }}>
                       ⚠️ {t('citizen.suspicious')} — Authority notified
+                    </div>
+                  )}
+                  {issue.isRatingFrozen && issue.flaggedReviewBatch && (
+                    <div className="px-4 py-2 text-xs" style={{ background: '#FFF7ED', color: '#9A3412' }}>
+                      ⚡ Community rating frozen at {issue.overallRatingScore.toFixed(1)}/5 after a sudden batch of {issue.flaggedReviewBatch.reviewsInBatch} reviews. Authority manual review is pending.
                     </div>
                   )}
                   <div className="flex gap-4 p-4">
@@ -463,6 +473,12 @@ export default function CitizenPortal() {
                       style={{ background: '#FEF2F2', color: '#991B1B', border: '1px solid #FECACA' }}>
                       👎 {issue.downvotes}
                     </button>
+                    <div
+                      className="flex items-center gap-1.5 px-3 py-1.5 rounded-full text-xs"
+                      style={{ background: issue.isRatingFrozen ? '#FFF7ED' : '#FFFBEB', color: issue.isRatingFrozen ? '#9A3412' : '#B45309', border: `1px solid ${issue.isRatingFrozen ? '#FED7AA' : '#FDE68A'}` }}
+                    >
+                      ⭐ {issue.overallRatingScore.toFixed(1)}/5 {issue.isRatingFrozen ? 'Frozen' : 'Live'}
+                    </div>
 
                     <button onClick={() => setBeforeAfterIssue(issue)}
                       className="flex items-center gap-1.5 px-3 py-1.5 rounded-full text-xs transition-all hover:opacity-80"
@@ -812,7 +828,7 @@ export default function CitizenPortal() {
       {beforeAfterIssue && <BeforeAfterModal issue={beforeAfterIssue} onClose={() => setBeforeAfterIssue(null)} />}
 
       {/* Issue Detail Modal */}
-      {selectedIssue && (
+      {selectedIssueDetails && (
         <div className="fixed inset-0 z-50 flex items-center justify-center p-4" style={{ background: 'rgba(0,0,0,0.7)' }}>
           <div className="bg-white rounded-2xl shadow-2xl w-full max-w-lg overflow-y-auto" style={{ maxHeight: '90vh' }}>
             <div className="flex items-center justify-between p-5" style={{ background: '#0B1C2D' }}>
@@ -820,64 +836,81 @@ export default function CitizenPortal() {
               <button onClick={() => setSelectedIssue(null)} className="text-white text-2xl">×</button>
             </div>
             <div className="p-5 space-y-4">
-              <img src={selectedIssue.beforeImage} alt="Issue" className="w-full rounded-xl object-cover" style={{ height: 200 }} />
+              <img src={selectedIssueDetails.beforeImage} alt="Issue" className="w-full rounded-xl object-cover" style={{ height: 200 }} />
               <div className="flex flex-wrap gap-2">
-                <StatusBadge status={selectedIssue.status} />
-                <UrgencyBadge urgency={selectedIssue.urgencyTag} />
-                <CategoryBadge category={selectedIssue.category} />
+                <StatusBadge status={selectedIssueDetails.status} />
+                <UrgencyBadge urgency={selectedIssueDetails.urgencyTag} />
+                <CategoryBadge category={selectedIssueDetails.category} />
               </div>
-              <h2 style={{ color: '#0B1C2D', fontWeight: 700 }}>{selectedIssue.title}</h2>
-              <p className="text-gray-600 text-sm">{selectedIssue.description}</p>
+              <h2 style={{ color: '#0B1C2D', fontWeight: 700 }}>{selectedIssueDetails.title}</h2>
+              <p className="text-gray-600 text-sm">{selectedIssueDetails.description}</p>
               <div className="grid grid-cols-2 gap-3 text-sm">
                 <div className="p-3 rounded-xl" style={{ background: '#F8FAFC' }}>
                   <p className="text-gray-400 text-xs">Location</p>
-                  <p style={{ fontWeight: 500 }}>{selectedIssue.city}, {selectedIssue.state}</p>
+                  <p style={{ fontWeight: 500 }}>{selectedIssueDetails.city}, {selectedIssueDetails.state}</p>
                 </div>
                 <div className="p-3 rounded-xl" style={{ background: '#F8FAFC' }}>
                   <p className="text-gray-400 text-xs">Reported On</p>
-                  <p style={{ fontWeight: 500 }}>{new Date(selectedIssue.createdAt).toLocaleDateString('en-IN')}</p>
+                  <p style={{ fontWeight: 500 }}>{new Date(selectedIssueDetails.createdAt).toLocaleDateString('en-IN')}</p>
                 </div>
                 <div className="p-3 rounded-xl" style={{ background: '#F8FAFC' }}>
                   <p className="text-gray-400 text-xs">Votes</p>
-                  <p style={{ fontWeight: 500 }}>👍 {selectedIssue.upvotes} / 👎 {selectedIssue.downvotes}</p>
+                  <p style={{ fontWeight: 500 }}>👍 {selectedIssueDetails.upvotes} / 👎 {selectedIssueDetails.downvotes}</p>
                 </div>
                 <div className="p-3 rounded-xl" style={{ background: '#F8FAFC' }}>
                   <p className="text-gray-400 text-xs">Address</p>
-                  <p style={{ fontWeight: 500, fontSize: '0.8rem' }}>{selectedIssue.address}</p>
+                  <p style={{ fontWeight: 500, fontSize: '0.8rem' }}>{selectedIssueDetails.address}</p>
+                </div>
+                <div className="p-3 rounded-xl" style={{ background: selectedIssueDetails.isRatingFrozen ? '#FFF7ED' : '#FFFBEB' }}>
+                  <p className="text-gray-400 text-xs">Community Rating</p>
+                  <p style={{ fontWeight: 600, color: selectedIssueDetails.isRatingFrozen ? '#9A3412' : '#B45309' }}>
+                    ⭐ {selectedIssueDetails.overallRatingScore.toFixed(1)}/5 {selectedIssueDetails.isRatingFrozen ? '(Frozen)' : ''}
+                  </p>
                 </div>
               </div>
 
-              {selectedIssue.afterImage && (
+              {selectedIssueDetails.isRatingFrozen && selectedIssueDetails.flaggedReviewBatch && (
+                <div className="p-4 rounded-xl" style={{ background: '#FFF7ED', border: '1px solid #FED7AA' }}>
+                  <p className="text-sm" style={{ color: '#9A3412', fontWeight: 600 }}>
+                    Rating freeze active: this issue received {selectedIssueDetails.flaggedReviewBatch.reviewsInBatch} quick reviews against a normal pace of about {selectedIssueDetails.flaggedReviewBatch.expectedDailyReviews.toFixed(1)} reviews/day.
+                  </p>
+                  <p className="text-xs mt-2" style={{ color: '#C2410C' }}>
+                    The trusted score is frozen at {selectedIssueDetails.flaggedReviewBatch.frozenScore.toFixed(1)}/5 until authority completes manual review.
+                  </p>
+                </div>
+              )}
+
+              {selectedIssueDetails.afterImage && (
                 <div>
                   <div className="flex items-center justify-between mb-2">
                     <p style={{ fontWeight: 600, color: '#0B1C2D' }}>Resolution Proof</p>
                     <button
-                      onClick={() => setBeforeAfterIssue(selectedIssue)}
+                      onClick={() => setBeforeAfterIssue(selectedIssueDetails)}
                       className="px-3 py-1.5 rounded-full text-xs transition-all hover:opacity-80"
                       style={{ background: '#EFF6FF', color: '#1D4ED8', border: '1px solid #BFDBFE' }}
                     >
                       Review Before & After
                     </button>
                   </div>
-                  <img src={selectedIssue.afterImage} alt="Resolution proof" className="w-full rounded-xl object-cover" style={{ height: 180 }} />
+                  <img src={selectedIssueDetails.afterImage} alt="Resolution proof" className="w-full rounded-xl object-cover" style={{ height: 180 }} />
                 </div>
               )}
 
-              {selectedIssue.status === 'awaiting_citizen_verification' && (
+              {selectedIssueDetails.status === 'awaiting_citizen_verification' && (
                 <div className="p-4 rounded-xl" style={{ background: '#FFF7ED', border: '1px solid #FED7AA' }}>
                   <p className="text-sm mb-3" style={{ color: '#9A3412', fontWeight: 600 }}>
                     Authority has submitted proof. Only the reporting citizen can close this issue.
                   </p>
                   <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
                     <button
-                      onClick={() => handleCitizenVerification(selectedIssue.id, true)}
+                      onClick={() => handleCitizenVerification(selectedIssueDetails.id, true)}
                       className="py-3 rounded-xl text-sm text-white transition-all hover:opacity-90"
                       style={{ background: '#15803D', fontWeight: 600 }}
                     >
                       Verify And Close Issue
                     </button>
                     <button
-                      onClick={() => handleCitizenVerification(selectedIssue.id, false)}
+                      onClick={() => handleCitizenVerification(selectedIssueDetails.id, false)}
                       className="py-3 rounded-xl text-sm text-white transition-all hover:opacity-90"
                       style={{ background: '#B45309', fontWeight: 600 }}
                     >
@@ -890,26 +923,26 @@ export default function CitizenPortal() {
               {/* Comments */}
               <div>
                 <p className="mb-2" style={{ fontWeight: 600, color: '#0B1C2D' }}>💬 Comments</p>
-                {comments.filter(c => c.issueId === selectedIssue.id).map(c => (
+                {comments.filter(c => c.issueId === selectedIssueDetails.id).map(c => (
                   <div key={c.id} className="mb-2 p-3 rounded-xl" style={{ background: '#F8FAFC' }}>
                     <p className="text-xs text-gray-500 mb-1">{c.userName} • {new Date(c.createdAt).toLocaleDateString('en-IN')}</p>
                     <p className="text-sm">{c.content}</p>
                   </div>
                 ))}
-                {comments.filter(c => c.issueId === selectedIssue.id).length === 0 && (
+                {comments.filter(c => c.issueId === selectedIssueDetails.id).length === 0 && (
                   <p className="text-gray-400 text-sm">No comments yet.</p>
                 )}
               </div>
             </div>
 
             {/* Assigned Contractor/NGO */}
-            <AssignedBadge contractorId={selectedIssue.assignedContractor} ngoId={selectedIssue.assignedNgo} />
+            <AssignedBadge contractorId={selectedIssueDetails.assignedContractor} ngoId={selectedIssueDetails.assignedNgo} />
 
             {/* Donate to NGO Button */}
-            {selectedIssue.assignedNgo && (
+            {selectedIssueDetails.assignedNgo && (
               <div className="px-5 pb-5">
                 <button
-                  onClick={() => setDonationNgoId(selectedIssue.assignedNgo)}
+                  onClick={() => setDonationNgoId(selectedIssueDetails.assignedNgo)}
                   className="w-full py-3 rounded-xl text-white transition-all hover:opacity-90 active:scale-95 flex items-center justify-center gap-2"
                   style={{ background: 'linear-gradient(135deg, #10B981 0%, #059669 100%)', fontWeight: 600 }}
                 >
