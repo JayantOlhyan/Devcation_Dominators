@@ -1,15 +1,7 @@
 import React from 'react';
 import { useNavigate } from 'react-router';
 import { useApp } from '../../context/AppContext';
-import { useLang, Language } from '../../context/LanguageContext';
-
-const LANGUAGES: { code: Language; label: string }[] = [
-  { code: 'en', label: 'EN' },
-  { code: 'hi', label: 'हि' },
-  { code: 'ta', label: 'த' },
-  { code: 'mr', label: 'म' },
-  { code: 'kn', label: 'ಕ' },
-];
+import { useLang, LANGUAGE_OPTIONS } from '../../context/LanguageContext';
 
 interface PortalHeaderProps {
   title: string;
@@ -23,7 +15,10 @@ export function PortalHeader({ title, subtitle, onProfileClick }: PortalHeaderPr
   const { language, setLanguage, t } = useLang();
 
   const roleEmojis: Record<string, string> = {
-    citizen: '👤', authority: '👨🏻‍💼', contractor: '👨🏻‍🔧', ngo: '👥',
+    citizen: '👤',
+    authority: '👨🏻‍💼',
+    contractor: '👨🏻‍🔧',
+    ngo: '👥',
   };
 
   const handleLogout = () => {
@@ -39,7 +34,9 @@ export function PortalHeader({ title, subtitle, onProfileClick }: PortalHeaderPr
             <div className="w-8 h-8 rounded-full flex items-center justify-center" style={{ background: '#E8821C' }}>
               <span className="text-white text-sm">🏛</span>
             </div>
-            <span className="text-white tracking-widest uppercase hidden sm:block" style={{ fontWeight: 700, fontSize: '1.1rem', letterSpacing: '0.15em' }}>CIVICSETU</span>
+            <span className="text-white tracking-widest uppercase hidden sm:block" style={{ fontWeight: 700, fontSize: '1.1rem', letterSpacing: '0.15em' }}>
+              {t('app.name')}
+            </span>
           </button>
           <div className="w-px h-6 bg-white opacity-20 mx-1" />
           <div>
@@ -49,21 +46,20 @@ export function PortalHeader({ title, subtitle, onProfileClick }: PortalHeaderPr
         </div>
 
         <div className="flex items-center gap-2">
-          {/* Language Selector */}
           <div className="hidden md:flex items-center gap-1">
-            {LANGUAGES.map(lang => (
+            {LANGUAGE_OPTIONS.map(option => (
               <button
-                key={lang.code}
-                onClick={() => setLanguage(lang.code)}
+                key={option.code}
+                onClick={() => setLanguage(option.code)}
                 className="px-2 py-0.5 rounded-full text-xs transition-all"
                 style={{
-                  background: language === lang.code ? '#E8821C' : 'rgba(255,255,255,0.1)',
+                  background: language === option.code ? '#E8821C' : 'rgba(255,255,255,0.1)',
                   color: 'white',
-                  border: language === lang.code ? '1.5px solid #E8821C' : '1.5px solid rgba(255,255,255,0.2)',
-                  fontWeight: language === lang.code ? 600 : 400,
+                  border: language === option.code ? '1.5px solid #E8821C' : '1.5px solid rgba(255,255,255,0.2)',
+                  fontWeight: language === option.code ? 600 : 400,
                 }}
               >
-                {lang.label}
+                {option.label}
               </button>
             ))}
           </div>

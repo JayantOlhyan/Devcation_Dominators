@@ -1,11 +1,13 @@
 import React, { useState, useEffect } from 'react';
 import { useNavigate } from 'react-router';
 import { useApp, Issue, NgoRequest, Donation } from '../context/AppContext';
+import { useLang } from '../context/LanguageContext';
 import { PortalHeader } from '../components/shared/PortalHeader';
 import { StatusBadge, UrgencyBadge, CategoryBadge } from '../components/shared/StatusBadge';
 import { BeforeAfterModal } from '../components/shared/BeforeAfterModal';
 import { AssignedBadge } from '../components/shared/AssignedBadge';
 import { DuplicateBadge } from '../components/shared/DuplicateBadge';
+import { getLocalizedIssueCopy, getLocalizedStateName } from '../utils/issueLocalization';
 import { PieChart, Pie, Cell, BarChart, Bar, XAxis, YAxis, Tooltip, ResponsiveContainer, Legend } from 'recharts';
 
 const COLORS = ['#0B1C2D', '#E8821C', '#22C55E', '#3B82F6', '#EF4444', '#8B5CF6'];
@@ -13,6 +15,7 @@ const COLORS = ['#0B1C2D', '#E8821C', '#22C55E', '#3B82F6', '#EF4444', '#8B5CF6'
 export default function NGOPortal() {
   const navigate = useNavigate();
   const { currentUser, issues, ngoRequests, donations, addNgoRequest, addDonation } = useApp();
+  const { language, t } = useLang();
   const [activeTab, setActiveTab] = useState<'issues' | 'requests' | 'analytics' | 'donations'>('issues');
   const [filterState, setFilterState] = useState('all');
   const [filterCat, setFilterCat] = useState('all');
@@ -112,7 +115,7 @@ export default function NGOPortal() {
 
   return (
     <div className="min-h-screen" style={{ background: '#F5F0E8', fontFamily: "'Poppins', sans-serif" }}>
-      <PortalHeader title="NGO Portal" subtitle={currentUser.ngoName || 'NGO'} onProfileClick={() => setProfileOpen(true)} />
+      <PortalHeader title={t('ngo.title')} subtitle={currentUser.ngoName || 'NGO'} onProfileClick={() => setProfileOpen(true)} />
 
       {/* Tab Bar */}
       <div className="sticky top-14 z-30 shadow-sm" style={{ background: '#fff', borderBottom: '1px solid #E2E8F0' }}>
@@ -121,7 +124,7 @@ export default function NGOPortal() {
             <button key={tab.key} onClick={() => setActiveTab(tab.key as any)}
               className="flex items-center gap-2 px-5 py-3.5 text-sm whitespace-nowrap transition-all"
               style={{ color: activeTab === tab.key ? '#0B1C2D' : '#6B7280', borderBottom: activeTab === tab.key ? '3px solid #E8821C' : '3px solid transparent', fontWeight: activeTab === tab.key ? 600 : 400, background: 'transparent' }}>
-              <span>{tab.emoji}</span> {tab.label}
+              <span>{tab.emoji}</span> {t(`ngo.tab.${tab.key}`)}
             </button>
           ))}
         </div>
@@ -135,7 +138,7 @@ export default function NGOPortal() {
               <select className="px-3 py-2 rounded-xl text-sm border-2 outline-none" style={{ borderColor: '#E2E8F0', background: '#F8FAFC' }}
                 value={filterState} onChange={e => setFilterState(e.target.value)}>
                 <option value="all">All States</option>
-                {allStates.map(s => <option key={s} value={s}>{s}</option>)}
+                {allStates.map(s => <option key={s} value={s}>{getLocalizedStateName(s, language)}</option>)}
               </select>
               <select className="px-3 py-2 rounded-xl text-sm border-2 outline-none" style={{ borderColor: '#E2E8F0', background: '#F8FAFC' }}
                 value={filterCat} onChange={e => setFilterCat(e.target.value)}>
@@ -171,11 +174,11 @@ export default function NGOPortal() {
                           <CategoryBadge category={issue.category} />
                         </div>
                         <div className="flex items-center gap-2">
-                          <h3 style={{ color: '#0B1C2D', fontWeight: 600, fontSize: '0.95rem' }}>{issue.title}</h3>
+                          <h3 style={{ color: '#0B1C2D', fontWeight: 600, fontSize: '0.95rem' }}>{getLocalizedIssueCopy(issue, language).title}</h3>
                           <DuplicateBadge count={issue.duplicateCount} />
                         </div>
-                        <p className="text-gray-500 text-xs">📍 {issue.address}, {issue.city}, {issue.state}</p>
-                        <p className="text-gray-600 text-sm mt-1 line-clamp-2">{issue.description}</p>
+                        <p className="text-gray-500 text-xs">📍 {getLocalizedIssueCopy(issue, language).address}, {getLocalizedIssueCopy(issue, language).city}, {getLocalizedIssueCopy(issue, language).state}</p>
+                        <p className="text-gray-600 text-sm mt-1 line-clamp-2">{getLocalizedIssueCopy(issue, language).description}</p>
                       </div>
                     </div>
                     <div className="px-4 pb-4 flex items-center gap-3">
@@ -243,10 +246,10 @@ export default function NGOPortal() {
                           </span>
                         </div>
                         <div className="flex items-center gap-2">
-                          <p style={{ fontWeight: 600, color: '#0B1C2D' }}>{issue.title}</p>
+                        <p style={{ fontWeight: 600, color: '#0B1C2D' }}>{getLocalizedIssueCopy(issue, language).title}</p>
                           <DuplicateBadge count={issue.duplicateCount} />
                         </div>
-                        <p className="text-gray-500 text-xs">📍 {issue.city}, {issue.state}</p>
+                        <p className="text-gray-500 text-xs">📍 {getLocalizedIssueCopy(issue, language).city}, {getLocalizedIssueCopy(issue, language).state}</p>
                         <p className="text-gray-400 text-xs mt-1">Requested: {new Date(req.createdAt).toLocaleDateString('en-IN')}</p>
                       </div>
                     </div>

@@ -1,15 +1,18 @@
 import React, { useState, useEffect } from 'react';
 import { useNavigate } from 'react-router';
 import { useApp, Issue } from '../context/AppContext';
+import { useLang } from '../context/LanguageContext';
 import { PortalHeader } from '../components/shared/PortalHeader';
 import { StatusBadge, UrgencyBadge, CategoryBadge } from '../components/shared/StatusBadge';
 import { BeforeAfterModal } from '../components/shared/BeforeAfterModal';
 import { AssignedBadge } from '../components/shared/AssignedBadge';
 import { DuplicateBadge } from '../components/shared/DuplicateBadge';
+import { getLocalizedIssueCopy, getLocalizedStateName } from '../utils/issueLocalization';
 
 export default function AuthorityPortal() {
   const navigate = useNavigate();
   const { currentUser, issues, bids, ngoRequests, updateIssueStatus, selectBid, updateNgoRequest, submitResolutionProof } = useApp();
+  const { language, t } = useLang();
   const [activeTab, setActiveTab] = useState<'dashboard' | 'issues' | 'bidding' | 'ngo'>('dashboard');
   const [selectedIssue, setSelectedIssue] = useState<Issue | null>(null);
   const [beforeAfterIssue, setBeforeAfterIssue] = useState<Issue | null>(null);
@@ -47,6 +50,7 @@ export default function AuthorityPortal() {
     const urgOrder = { High: 0, Medium: 1, Low: 2 };
     return urgOrder[a.urgencyTag] - urgOrder[b.urgencyTag];
   });
+  const localizedSelectedIssue = selectedIssue ? getLocalizedIssueCopy(selectedIssue, language) : null;
 
   const handleSelectBid = (bidId: string, issueId: string, contractorId: string) => {
     selectBid(bidId, issueId, contractorId);
@@ -84,7 +88,7 @@ export default function AuthorityPortal() {
 
   return (
     <div className="min-h-screen" style={{ background: '#F5F0E8', fontFamily: "'Poppins', sans-serif" }}>
-      <PortalHeader title="Authority Portal" subtitle="Delhi Municipal Corporation" onProfileClick={() => setProfileOpen(true)} />
+      <PortalHeader title={t('authority.title')} subtitle="Delhi Municipal Corporation" onProfileClick={() => setProfileOpen(true)} />
 
       {/* Tab Bar */}
       <div className="sticky top-14 z-30 shadow-sm" style={{ background: '#fff', borderBottom: '1px solid #E2E8F0' }}>
@@ -93,7 +97,7 @@ export default function AuthorityPortal() {
             <button key={tab.key} onClick={() => setActiveTab(tab.key as any)}
               className="flex items-center gap-2 px-5 py-3.5 text-sm whitespace-nowrap transition-all"
               style={{ color: activeTab === tab.key ? '#0B1C2D' : '#6B7280', borderBottom: activeTab === tab.key ? '3px solid #E8821C' : '3px solid transparent', fontWeight: activeTab === tab.key ? 600 : 400, background: 'transparent' }}>
-              <span>{tab.emoji}</span> {tab.label}
+              <span>{tab.emoji}</span> {t(`authority.tab.${tab.key}`)}
             </button>
           ))}
         </div>
@@ -126,10 +130,10 @@ export default function AuthorityPortal() {
                   <div key={issue.id} className="flex items-center justify-between p-3 bg-white rounded-xl mb-2">
                     <div>
                       <div className="flex items-center gap-2">
-                        <p className="text-sm" style={{ fontWeight: 500 }}>{issue.title}</p>
+                        <p className="text-sm" style={{ fontWeight: 500 }}>{getLocalizedIssueCopy(issue, language).title}</p>
                         <DuplicateBadge count={issue.duplicateCount} />
                       </div>
-                      <p className="text-xs text-gray-500">{issue.city} | 👎 {issue.downvotes} downvotes — May be incorrectly categorized</p>
+                      <p className="text-xs text-gray-500">{getLocalizedIssueCopy(issue, language).city} | 👎 {issue.downvotes} downvotes — May be incorrectly categorized</p>
                     </div>
                     <button onClick={() => setSelectedIssue(issue)}
                       className="px-3 py-1.5 rounded-lg text-xs text-white" style={{ background: '#991B1B' }}>
@@ -160,12 +164,12 @@ export default function AuthorityPortal() {
                         </td>
                         <td className="py-3 pr-4" style={{ maxWidth: 200 }}>
                           <div className="flex items-center gap-2">
-                            <p className="truncate" style={{ fontWeight: 500 }}>{issue.title}</p>
+                            <p className="truncate" style={{ fontWeight: 500 }}>{getLocalizedIssueCopy(issue, language).title}</p>
                             <DuplicateBadge count={issue.duplicateCount} />
                           </div>
                         </td>
                         <td className="py-3 pr-4"><CategoryBadge category={issue.category} /></td>
-                        <td className="py-3 pr-4 text-xs text-gray-500">{issue.city}, {issue.state}</td>
+                        <td className="py-3 pr-4 text-xs text-gray-500">{getLocalizedIssueCopy(issue, language).city}, {getLocalizedIssueCopy(issue, language).state}</td>
                         <td className="py-3 pr-4"><StatusBadge status={issue.status} /></td>
                         <td className="py-3 pr-4"><UrgencyBadge urgency={issue.urgencyTag} /></td>
                         <td className="py-3">
@@ -200,7 +204,7 @@ export default function AuthorityPortal() {
               <select className="px-3 py-2 rounded-xl text-sm border-2 outline-none" style={{ borderColor: '#E2E8F0', background: '#F8FAFC' }}
                 value={filterState} onChange={e => setFilterState(e.target.value)}>
                 <option value="all">All States</option>
-                {allStates.map(s => <option key={s} value={s}>{s}</option>)}
+                {allStates.map(s => <option key={s} value={s}>{getLocalizedStateName(s, language)}</option>)}
               </select>
               <select className="px-3 py-2 rounded-xl text-sm border-2 outline-none" style={{ borderColor: '#E2E8F0', background: '#F8FAFC' }}
                 value={filterCat} onChange={e => setFilterCat(e.target.value)}>
@@ -231,13 +235,13 @@ export default function AuthorityPortal() {
                         </td>
                         <td className="py-3 px-4" style={{ maxWidth: 200 }}>
                           <div className="flex items-center gap-2">
-                            <p className="truncate" style={{ fontWeight: 500, color: '#0B1C2D' }}>{issue.title}</p>
+                            <p className="truncate" style={{ fontWeight: 500, color: '#0B1C2D' }}>{getLocalizedIssueCopy(issue, language).title}</p>
                             <DuplicateBadge count={issue.duplicateCount} />
                           </div>
                           {issue.isSuspicious && <span className="text-xs text-red-600">⚠️ Suspicious</span>}
                         </td>
                         <td className="py-3 px-4"><CategoryBadge category={issue.category} /></td>
-                        <td className="py-3 px-4 text-xs text-gray-500">{issue.city}, {issue.state}</td>
+                        <td className="py-3 px-4 text-xs text-gray-500">{getLocalizedIssueCopy(issue, language).city}, {getLocalizedIssueCopy(issue, language).state}</td>
                         <td className="py-3 px-4"><StatusBadge status={issue.status} /></td>
                         <td className="py-3 px-4"><UrgencyBadge urgency={issue.urgencyTag} /></td>
                         <td className="py-3 px-4 text-xs">
@@ -285,10 +289,10 @@ export default function AuthorityPortal() {
                         <CategoryBadge category={issue.category} />
                       </div>
                       <div className="flex items-center gap-2">
-                        <h3 className="truncate" style={{ color: '#0B1C2D', fontWeight: 600 }}>{issue.title}</h3>
+                        <h3 className="truncate" style={{ color: '#0B1C2D', fontWeight: 600 }}>{getLocalizedIssueCopy(issue, language).title}</h3>
                         <DuplicateBadge count={issue.duplicateCount} />
                       </div>
-                      <p className="text-gray-500 text-xs">📍 {issue.address}, {issue.city}</p>
+                      <p className="text-gray-500 text-xs">📍 {getLocalizedIssueCopy(issue, language).address}, {getLocalizedIssueCopy(issue, language).city}</p>
                     </div>
                   </div>
 
@@ -356,11 +360,11 @@ export default function AuthorityPortal() {
                         )}
                       </div>
                       <div className="flex items-center gap-2">
-                        <h3 style={{ fontWeight: 600, color: '#0B1C2D' }}>{issue.title}</h3>
+                        <h3 style={{ fontWeight: 600, color: '#0B1C2D' }}>{getLocalizedIssueCopy(issue, language).title}</h3>
                         <DuplicateBadge count={issue.duplicateCount} />
                       </div>
                       <p className="text-gray-500 text-sm">🏢 NGO: <strong>{req.ngoName}</strong></p>
-                      <p className="text-gray-500 text-xs">📍 {issue.city}, {issue.state} | 📅 {new Date(req.createdAt).toLocaleDateString('en-IN')}</p>
+                      <p className="text-gray-500 text-xs">📍 {getLocalizedIssueCopy(issue, language).city}, {getLocalizedIssueCopy(issue, language).state} | 📅 {new Date(req.createdAt).toLocaleDateString('en-IN')}</p>
                     </div>
                     {req.status === 'pending' && (
                       <div className="flex gap-2 flex-shrink-0">
@@ -387,19 +391,19 @@ export default function AuthorityPortal() {
         <div className="fixed inset-0 z-50 flex items-center justify-center p-4" style={{ background: 'rgba(0,0,0,0.7)' }}>
           <div className="bg-white rounded-2xl shadow-2xl w-full max-w-2xl overflow-y-auto" style={{ maxHeight: '90vh' }}>
             <div className="flex items-center justify-between p-5" style={{ background: '#0B1C2D' }}>
-              <h3 className="text-white" style={{ fontWeight: 700 }}>Issue Details</h3>
+              <h3 className="text-white" style={{ fontWeight: 700 }}>{t('common.details')}</h3>
               <button onClick={() => setSelectedIssue(null)} className="text-white text-2xl">×</button>
             </div>
             <div className="p-5 space-y-4">
               <div className="grid grid-cols-2 gap-4">
                 <div>
                   <p className="text-xs text-gray-500 mb-1">Before (Citizen Reported)</p>
-                  <img src={selectedIssue.beforeImage} alt="Before" className="w-full rounded-xl object-cover" style={{ height: 160 }} />
+                  <img src={selectedIssue.beforeImage} alt={t('beforeAfter.before')} className="w-full rounded-xl object-cover" style={{ height: 160 }} />
                 </div>
                 <div>
                   <p className="text-xs text-gray-500 mb-1">After (Resolution)</p>
                   {selectedIssue.afterImage ? (
-                    <img src={selectedIssue.afterImage} alt="After" className="w-full rounded-xl object-cover" style={{ height: 160 }} />
+                      <img src={selectedIssue.afterImage} alt={t('beforeAfter.afterResolved')} className="w-full rounded-xl object-cover" style={{ height: 160 }} />
                   ) : (
                     <div className="w-full rounded-xl flex items-center justify-center text-gray-400 text-sm" style={{ height: 160, background: '#F8FAFC', border: '2px dashed #E2E8F0' }}>
                       No after image yet
@@ -415,11 +419,11 @@ export default function AuthorityPortal() {
               </div>
 
               <div className="flex flex-wrap items-center gap-2">
-                <h2 style={{ color: '#0B1C2D', fontWeight: 700 }}>{selectedIssue.title}</h2>
+                <h2 style={{ color: '#0B1C2D', fontWeight: 700 }}>{localizedSelectedIssue?.title}</h2>
                 <DuplicateBadge count={selectedIssue.duplicateCount} />
               </div>
-              <p className="text-gray-600 text-sm">{selectedIssue.description}</p>
-              <p className="text-gray-500 text-sm">📍 {selectedIssue.address}, {selectedIssue.city}, {selectedIssue.state}</p>
+              <p className="text-gray-600 text-sm">{localizedSelectedIssue?.description}</p>
+              <p className="text-gray-500 text-sm">📍 {localizedSelectedIssue?.address}, {localizedSelectedIssue?.city}, {localizedSelectedIssue?.state}</p>
 
               {/* Status Controls */}
               <div className="p-4 rounded-xl" style={{ background: '#F8FAFC', border: '1px solid #E2E8F0' }}>
