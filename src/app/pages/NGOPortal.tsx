@@ -147,6 +147,7 @@ export default function NGOPortal() {
               <select className="px-3 py-2 rounded-xl text-sm border-2 outline-none" style={{ borderColor: '#E2E8F0', background: '#F8FAFC' }}
                 value={filterStatus} onChange={e => setFilterStatus(e.target.value)}>
                 <option value="all">All Statuses</option>
+                <option value="awaiting_citizen_verification">Awaiting Citizen Verification</option>
                 <option value="unresolved">⚠️ Unresolved</option>
                 <option value="resolved">✅ Resolved</option>
               </select>

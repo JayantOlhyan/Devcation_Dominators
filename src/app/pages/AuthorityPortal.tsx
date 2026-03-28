@@ -8,7 +8,7 @@ import { AssignedBadge } from '../components/shared/AssignedBadge';
 
 export default function AuthorityPortal() {
   const navigate = useNavigate();
-  const { currentUser, issues, bids, ngoRequests, updateIssueStatus, selectBid, updateNgoRequest, updateAfterImage } = useApp();
+  const { currentUser, issues, bids, ngoRequests, updateIssueStatus, selectBid, updateNgoRequest, submitResolutionProof } = useApp();
   const [activeTab, setActiveTab] = useState<'dashboard' | 'issues' | 'bidding' | 'ngo'>('dashboard');
   const [selectedIssue, setSelectedIssue] = useState<Issue | null>(null);
   const [beforeAfterIssue, setBeforeAfterIssue] = useState<Issue | null>(null);
@@ -19,9 +19,11 @@ export default function AuthorityPortal() {
   const [profileOpen, setProfileOpen] = useState(false);
 
   useEffect(() => { if (!currentUser) navigate('/'); }, [currentUser, navigate]);
+  useEffect(() => { setAfterImageUrl(selectedIssue?.afterImage || ''); }, [selectedIssue]);
 
   const resolved = issues.filter(i => i.status === 'resolved').length;
   const inProgress = issues.filter(i => i.status === 'in_progress').length;
+  const awaitingVerification = issues.filter(i => i.status === 'awaiting_citizen_verification').length;
   const openBidding = issues.filter(i => i.status === 'open_for_bidding').length;
   const highUrgency = issues.filter(i => i.urgencyTag === 'High' && i.status !== 'resolved').length;
   const suspicious = issues.filter(i => i.isSuspicious).length;
@@ -50,11 +52,12 @@ export default function AuthorityPortal() {
     setSelectedIssue(null);
   };
 
-  const handleMarkResolved = (issueId: string) => {
-    if (afterImageUrl.trim()) {
-      updateAfterImage(issueId, afterImageUrl.trim());
+  const handleSubmitProof = (issueId: string) => {
+    if (!afterImageUrl.trim()) {
+      alert('Authority proof image is required before an issue can move for citizen verification.');
+      return;
     }
-    updateIssueStatus(issueId, 'resolved');
+    submitResolutionProof(issueId, afterImageUrl.trim());
     setSelectedIssue(null);
     setAfterImageUrl('');
   };
@@ -71,6 +74,7 @@ export default function AuthorityPortal() {
   const kpiCards = [
     { label: 'Resolved', value: resolved, icon: '✅', bg: '#F0FDF4', text: '#15803D', border: '#BBF7D0' },
     { label: 'In Progress', value: inProgress, icon: '⚙️', bg: '#FFFBEB', text: '#B45309', border: '#FDE68A' },
+    { label: 'Awaiting Citizen Verification', value: awaitingVerification, icon: '🟠', bg: '#FFF7ED', text: '#C2410C', border: '#FED7AA' },
     { label: 'Open for Bidding', value: openBidding, icon: '🔍', bg: '#EFF6FF', text: '#1D4ED8', border: '#BFDBFE' },
     { label: '🔴 High Urgency', value: highUrgency, icon: '⚠️', bg: '#FEF2F2', text: '#991B1B', border: '#FECACA' },
     { label: 'Suspicious', value: suspicious, icon: '🚨', bg: '#FFF7ED', text: '#C2410C', border: '#FED7AA' },
@@ -183,6 +187,7 @@ export default function AuthorityPortal() {
                 <option value="unresolved">Unresolved</option>
                 <option value="open_for_bidding">Open for Bidding</option>
                 <option value="in_progress">In Progress</option>
+                <option value="awaiting_citizen_verification">Awaiting Citizen Verification</option>
                 <option value="resolved">Resolved</option>
               </select>
               <select className="px-3 py-2 rounded-xl text-sm border-2 outline-none" style={{ borderColor: '#E2E8F0', background: '#F8FAFC' }}
@@ -401,7 +406,7 @@ export default function AuthorityPortal() {
               <div className="p-4 rounded-xl" style={{ background: '#F8FAFC', border: '1px solid #E2E8F0' }}>
                 <p className="text-sm mb-3" style={{ fontWeight: 600, color: '#0B1C2D' }}>Update Status</p>
                 <div className="flex flex-wrap gap-2 mb-3">
-                  {(['open_for_bidding', 'in_progress', 'resolved'] as const).map(s => (
+                  {(['open_for_bidding', 'in_progress'] as const).map(s => (
                     <button key={s}
                       onClick={() => selectedIssue.status !== s && updateIssueStatus(selectedIssue.id, s)}
                       className="px-3 py-1.5 rounded-full text-xs transition-all"
@@ -415,17 +420,23 @@ export default function AuthorityPortal() {
                   ))}
                 </div>
 
-                {selectedIssue.status === 'in_progress' && (
+                {selectedIssue.status === 'awaiting_citizen_verification' && (
+                  <div className="mb-3 p-3 rounded-xl text-sm" style={{ background: '#FFF7ED', color: '#9A3412', border: '1px solid #FED7AA' }}>
+                    Resolution proof has been submitted. This issue will stay open until the reporting citizen verifies that the work is complete.
+                  </div>
+                )}
+
+                {(selectedIssue.status === 'in_progress' || selectedIssue.status === 'awaiting_citizen_verification') && (
                   <div className="space-y-2">
-                    <p className="text-xs text-gray-500">Upload after-resolution image URL (optional):</p>
+                    <p className="text-xs text-gray-500">Upload authority proof image URL (required before citizen verification):</p>
                     <input
                       className="w-full px-3 py-2 rounded-xl border-2 text-sm outline-none"
                       style={{ borderColor: '#E2E8F0', background: 'white' }}
-                      placeholder="https://... or leave blank"
+                      placeholder="https://..."
                       value={afterImageUrl}
                       onChange={e => setAfterImageUrl(e.target.value)}
                     />
-                    <button onClick={() => handleMarkResolved(selectedIssue.id)}
+                    <button onClick={() => handleSubmitProof(selectedIssue.id)}
                       className="w-full py-2.5 rounded-xl text-sm text-white hover:opacity-90"
                       style={{ background: '#15803D' }}>
                       ✅ Mark as Resolved

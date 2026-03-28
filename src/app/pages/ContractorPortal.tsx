@@ -16,7 +16,7 @@ const AFTER_IMAGES = {
 
 export default function ContractorPortal() {
   const navigate = useNavigate();
-  const { currentUser, issues, bids, addBid, updateAfterImage, updateIssueStatus } = useApp();
+  const { currentUser, issues, bids, addBid, updateAfterImage } = useApp();
   const [activeTab, setActiveTab] = useState<'bids' | 'projects' | 'profile'>('bids');
   const [selectedIssue, setSelectedIssue] = useState<Issue | null>(null);
   const [beforeAfterIssue, setBeforeAfterIssue] = useState<Issue | null>(null);
@@ -183,6 +183,7 @@ export default function ContractorPortal() {
                 <option value="all">All Statuses</option>
                 <option value="open_for_bidding">Open for Bidding</option>
                 <option value="in_progress">In Progress</option>
+                <option value="awaiting_citizen_verification">Awaiting Citizen Verification</option>
                 <option value="resolved">Resolved</option>
                 <option value="unresolved">Unresolved</option>
               </select>
@@ -246,6 +247,14 @@ export default function ContractorPortal() {
                             </button>
                           </div>
                           <p className="text-xs text-blue-400 mt-1">Leave URL blank to use a default resolution image for your category.</p>
+                        </div>
+                      )}
+
+                      {issue.status === 'awaiting_citizen_verification' && (
+                        <div className="p-4 rounded-xl" style={{ background: '#FFF7ED', border: '1px solid #FED7AA' }}>
+                          <p className="text-sm" style={{ color: '#9A3412', fontWeight: 500 }}>
+                            Authority has submitted proof. This project stays open until the reporting citizen verifies the fix.
+                          </p>
                         </div>
                       )}
 

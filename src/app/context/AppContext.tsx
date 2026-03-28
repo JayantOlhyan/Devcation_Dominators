@@ -1,7 +1,7 @@
 import React, { createContext, useContext, useState, useCallback, ReactNode } from 'react';
 
 export type IssueCategory = 'water' | 'road' | 'electricity' | 'sanitation';
-export type IssueStatus = 'open_for_bidding' | 'in_progress' | 'resolved';
+export type IssueStatus = 'open_for_bidding' | 'in_progress' | 'awaiting_citizen_verification' | 'resolved';
 export type UrgencyTag = 'High' | 'Medium' | 'Low';
 export type UserRole = 'citizen' | 'authority' | 'contractor' | 'ngo';
 
@@ -164,6 +164,8 @@ interface AppContextType {
   addIssue: (issue: Issue) => void;
   updateIssueStatus: (issueId: string, status: IssueStatus) => void;
   updateAfterImage: (issueId: string, imageUrl: string) => void;
+  submitResolutionProof: (issueId: string, imageUrl: string) => void;
+  verifyIssueResolution: (issueId: string, isVerified: boolean) => void;
   addBid: (bid: Bid) => void;
   selectBid: (bidId: string, issueId: string, contractorId: string) => void;
   addNgoRequest: (request: NgoRequest) => void;
@@ -186,8 +188,21 @@ export function AppProvider({ children }: { children: ReactNode }) {
   const [currentUser, setCurrentUser] = useState<AppUser | null>(null);
 
   const addIssue = useCallback((issue: Issue) => { setIssues(prev => [issue, ...prev]); }, []);
-  const updateIssueStatus = useCallback((issueId: string, status: IssueStatus) => { setIssues(prev => prev.map(i => i.id === issueId ? { ...i, status } : i)); }, []);
+  const updateIssueStatus = useCallback((issueId: string, status: IssueStatus) => {
+    setIssues(prev => prev.map(i => {
+      if (i.id !== issueId) return i;
+      if (status === 'resolved' && i.status !== 'awaiting_citizen_verification') return i;
+      if (status === 'awaiting_citizen_verification' && !i.afterImage) return i;
+      return { ...i, status };
+    }));
+  }, []);
   const updateAfterImage = useCallback((issueId: string, imageUrl: string) => { setIssues(prev => prev.map(i => i.id === issueId ? { ...i, afterImage: imageUrl } : i)); }, []);
+  const submitResolutionProof = useCallback((issueId: string, imageUrl: string) => {
+    setIssues(prev => prev.map(i => i.id === issueId ? { ...i, afterImage: imageUrl, status: 'awaiting_citizen_verification' } : i));
+  }, []);
+  const verifyIssueResolution = useCallback((issueId: string, isVerified: boolean) => {
+    setIssues(prev => prev.map(i => i.id === issueId ? { ...i, status: isVerified ? 'resolved' : 'in_progress' } : i));
+  }, []);
   const addBid = useCallback((bid: Bid) => { setBids(prev => [bid, ...prev]); }, []);
 
   const selectBid = useCallback((bidId: string, issueId: string, contractorId: string) => {
@@ -218,7 +233,7 @@ export function AppProvider({ children }: { children: ReactNode }) {
   const rateContractor = useCallback((issueId: string, rating: number) => { setIssues(prev => prev.map(i => i.id === issueId ? { ...i, contractorRating: rating } : i)); }, []);
 
   return (
-    <AppContext.Provider value={{ users, issues, bids, ngoRequests, donations, comments, currentUser, setCurrentUser, addIssue, updateIssueStatus, updateAfterImage, addBid, selectBid, addNgoRequest, updateNgoRequest, voteOnIssue, addComment, addDonation, rateContractor }}>
+    <AppContext.Provider value={{ users, issues, bids, ngoRequests, donations, comments, currentUser, setCurrentUser, addIssue, updateIssueStatus, updateAfterImage, submitResolutionProof, verifyIssueResolution, addBid, selectBid, addNgoRequest, updateNgoRequest, voteOnIssue, addComment, addDonation, rateContractor }}>
       {children}
     </AppContext.Provider>
   );

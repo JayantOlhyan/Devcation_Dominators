@@ -63,7 +63,7 @@ const getDetectedLandmark = (address: Record<string, string | undefined>, fallba
 
 export default function CitizenPortal() {
   const navigate = useNavigate();
-  const { currentUser, issues, voteOnIssue, addIssue, rateContractor, addComment, comments, users, addDonation, donations } = useApp();
+  const { currentUser, issues, voteOnIssue, addIssue, rateContractor, verifyIssueResolution, comments } = useApp();
   const { t, language } = useLang();
   const [activeTab, setActiveTab] = useState<'issues' | 'report' | 'chat' | 'profile'>('issues');
   const [beforeAfterIssue, setBeforeAfterIssue] = useState<Issue | null>(null);
@@ -234,7 +234,7 @@ export default function CitizenPortal() {
     };
   }, []);
 
-  const myIssues = issues;
+  const myIssues = issues.filter(i => i.createdBy === currentUser?.id);
   const filteredIssues = myIssues.filter(i => {
     if (filterStatus !== 'all') {
       if (filterStatus === 'unresolved') {
@@ -251,6 +251,13 @@ export default function CitizenPortal() {
     if (votedIssues.has(issueId)) return;
     voteOnIssue(issueId, type);
     setVotedIssues(prev => new Set([...prev, issueId]));
+  };
+
+  const handleCitizenVerification = (issueId: string, isVerified: boolean) => {
+    if (!myIssues.some(issue => issue.id === issueId)) return;
+    verifyIssueResolution(issueId, isVerified);
+    setSelectedIssue(null);
+    alert(isVerified ? 'Issue verified and marked as resolved.' : 'Issue sent back to in-progress for more work.');
   };
 
   const handleImageUpload = (e: React.ChangeEvent<HTMLInputElement>) => {
@@ -405,6 +412,7 @@ export default function CitizenPortal() {
                 <option value="all">All Statuses</option>
                 <option value="open_for_bidding">{t('citizen.status.open')}</option>
                 <option value="in_progress">{t('citizen.status.progress')}</option>
+                <option value="awaiting_citizen_verification">Awaiting Verification</option>
                 <option value="resolved">{t('citizen.status.resolved')}</option>
                 <option value="unresolved">{t('citizen.status.unresolved')}</option>
               </select>
@@ -468,6 +476,16 @@ export default function CitizenPortal() {
                       {t('citizen.issues.viewDetails')} →
                     </button>
                   </div>
+
+                  {issue.status === 'awaiting_citizen_verification' && (
+                    <div className="px-4 pb-4">
+                      <div className="p-3 rounded-xl" style={{ background: '#FFF7ED', border: '1px solid #FED7AA' }}>
+                        <p className="text-sm" style={{ color: '#9A3412', fontWeight: 500 }}>
+                          Authority has uploaded completion proof. Review the details and verify whether the issue is solved.
+                        </p>
+                      </div>
+                    </div>
+                  )}
 
                   {/* Rating for resolved issues */}
                   {issue.status === 'resolved' && issue.assignedContractor && (
@@ -775,9 +793,9 @@ export default function CitizenPortal() {
               <h3 className="mb-4" style={{ color: '#0B1C2D', fontWeight: 600 }}>Issue Summary</h3>
               <div className="grid grid-cols-3 gap-3">
                 {[
-                  { label: 'Total', count: issues.length, color: '#0B1C2D', bg: '#EFF6FF' },
-                  { label: 'Resolved', count: issues.filter(i => i.status === 'resolved').length, color: '#15803D', bg: '#F0FDF4' },
-                  { label: 'Open', count: issues.filter(i => i.status === 'open_for_bidding').length, color: '#1D4ED8', bg: '#EFF6FF' },
+                  { label: 'Total', count: myIssues.length, color: '#0B1C2D', bg: '#EFF6FF' },
+                  { label: 'Resolved', count: myIssues.filter(i => i.status === 'resolved').length, color: '#15803D', bg: '#F0FDF4' },
+                  { label: 'Active', count: myIssues.filter(i => i.status !== 'resolved').length, color: '#1D4ED8', bg: '#EFF6FF' },
                 ].map(s => (
                   <div key={s.label} className="p-4 rounded-xl text-center" style={{ background: s.bg }}>
                     <p style={{ fontSize: '1.5rem', fontWeight: 700, color: s.color }}>{s.count}</p>
@@ -828,6 +846,46 @@ export default function CitizenPortal() {
                   <p style={{ fontWeight: 500, fontSize: '0.8rem' }}>{selectedIssue.address}</p>
                 </div>
               </div>
+
+              {selectedIssue.afterImage && (
+                <div>
+                  <div className="flex items-center justify-between mb-2">
+                    <p style={{ fontWeight: 600, color: '#0B1C2D' }}>Resolution Proof</p>
+                    <button
+                      onClick={() => setBeforeAfterIssue(selectedIssue)}
+                      className="px-3 py-1.5 rounded-full text-xs transition-all hover:opacity-80"
+                      style={{ background: '#EFF6FF', color: '#1D4ED8', border: '1px solid #BFDBFE' }}
+                    >
+                      Review Before & After
+                    </button>
+                  </div>
+                  <img src={selectedIssue.afterImage} alt="Resolution proof" className="w-full rounded-xl object-cover" style={{ height: 180 }} />
+                </div>
+              )}
+
+              {selectedIssue.status === 'awaiting_citizen_verification' && (
+                <div className="p-4 rounded-xl" style={{ background: '#FFF7ED', border: '1px solid #FED7AA' }}>
+                  <p className="text-sm mb-3" style={{ color: '#9A3412', fontWeight: 600 }}>
+                    Authority has submitted proof. Only the reporting citizen can close this issue.
+                  </p>
+                  <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
+                    <button
+                      onClick={() => handleCitizenVerification(selectedIssue.id, true)}
+                      className="py-3 rounded-xl text-sm text-white transition-all hover:opacity-90"
+                      style={{ background: '#15803D', fontWeight: 600 }}
+                    >
+                      Verify And Close Issue
+                    </button>
+                    <button
+                      onClick={() => handleCitizenVerification(selectedIssue.id, false)}
+                      className="py-3 rounded-xl text-sm text-white transition-all hover:opacity-90"
+                      style={{ background: '#B45309', fontWeight: 600 }}
+                    >
+                      Not Solved Yet
+                    </button>
+                  </div>
+                </div>
+              )}
 
               {/* Comments */}
               <div>

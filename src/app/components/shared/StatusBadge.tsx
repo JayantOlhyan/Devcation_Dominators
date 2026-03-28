@@ -5,6 +5,7 @@ export function StatusBadge({ status }: { status: IssueStatus }) {
   const config = {
     open_for_bidding: { bg: '#EFF6FF', text: '#1D4ED8', border: '#BFDBFE', label: 'Open for Bidding', dot: '#3B82F6' },
     in_progress: { bg: '#FFFBEB', text: '#B45309', border: '#FDE68A', label: 'In Progress', dot: '#F59E0B' },
+    awaiting_citizen_verification: { bg: '#FFF7ED', text: '#C2410C', border: '#FED7AA', label: 'Awaiting Citizen Verification', dot: '#F97316' },
     resolved: { bg: '#F0FDF4', text: '#15803D', border: '#BBF7D0', label: 'Resolved', dot: '#22C55E' },
   }[status];
 
