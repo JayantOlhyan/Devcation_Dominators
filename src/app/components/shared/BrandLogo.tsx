@@ -1,4 +1,5 @@
 import React from 'react';
+import logo from '@/assets/logo.png';
 
 interface BrandLogoProps {
   size?: 'sm' | 'md' | 'lg' | 'xl';
@@ -20,7 +21,7 @@ export function BrandLogo({ size = 'md', className = '' }: BrandLogoProps) {
         /src/assets/logo.png 
       */}
       <img 
-        src="/logo.png" 
+        src={logo} 
         alt="Civic Setu Logo"
         className="w-full h-full object-cover"
         onError={(e) => {
