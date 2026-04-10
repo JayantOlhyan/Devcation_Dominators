@@ -20,7 +20,7 @@ export function BrandLogo({ size = 'md', className = '' }: BrandLogoProps) {
         /src/assets/logo.png 
       */}
       <img 
-        src="/src/assets/logo.png" 
+        src="/logo.png" 
         alt="Civic Setu Logo"
         className="w-full h-full object-cover"
         onError={(e) => {
