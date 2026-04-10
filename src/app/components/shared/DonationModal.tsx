@@ -140,7 +140,7 @@ export function DonationModal({ ngoId, onClose }: DonationModalProps) {
               <p className="text-gray-600">
                 {t('donation.recordedAmount', { amount: (amount || parseInt(customAmount, 10)).toLocaleString('en-IN') })}
               </p>
-              <p className="text-sm text-gray-500 mt-2">Together, we are building a better India.</p>
+              <p className="text-sm text-gray-500 mt-2">{t('donation.footer')}</p>
             </div>
             <button
               onClick={onClose}

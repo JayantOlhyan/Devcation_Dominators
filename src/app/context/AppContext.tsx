@@ -65,6 +65,7 @@ export interface Issue {
   isSuspicious: boolean;
   isDuplicate: boolean;
   contractorRating: number | null;
+  currentPercent: number;
   createdAt: string;
 }
 
@@ -140,6 +141,16 @@ type IssueSeed = Omit<Issue, 'overallRatingScore' | 'isRatingFrozen' | 'flaggedR
   duplicateCount?: number;
 };
 
+const getProgressForStatus = (status: IssueStatus): number => {
+  switch (status) {
+    case 'open_for_bidding': return 40;
+    case 'in_progress': return 60;
+    case 'awaiting_citizen_verification': return 95;
+    case 'resolved': return 100;
+    default: return 0;
+  }
+};
+
 const hydrateIssue = (issue: IssueSeed): Issue => ({
   ...issue,
   overallRatingScore: calculateIssueRatingScore(issue.upvotes, issue.downvotes),
@@ -148,6 +159,7 @@ const hydrateIssue = (issue: IssueSeed): Issue => ({
   reviewEvents: [],
   duplicateCount: issue.duplicateCount ?? 1,
   isDuplicate: issue.isDuplicate || (issue.duplicateCount ?? 1) > 1,
+  currentPercent: getProgressForStatus(issue.status),
 });
 
 const normalizeText = (value: string) => value.toLowerCase().replace(/[^a-z0-9\s]/g, ' ').replace(/\s+/g, ' ').trim();
@@ -399,7 +411,7 @@ export function AppProvider({ children }: { children: ReactNode }) {
       if (i.id !== issueId) return i;
       if (status === 'resolved' && i.status !== 'awaiting_citizen_verification') return i;
       if (status === 'awaiting_citizen_verification' && !i.afterImage) return i;
-      return { ...i, status };
+      return { ...i, status, currentPercent: getProgressForStatus(status) };
     }));
   }, []);
 
@@ -408,18 +420,18 @@ export function AppProvider({ children }: { children: ReactNode }) {
   }, []);
 
   const submitResolutionProof = useCallback((issueId: string, imageUrl: string) => {
-    setIssues(prev => prev.map(i => i.id === issueId ? { ...i, afterImage: imageUrl, status: 'awaiting_citizen_verification' } : i));
+    setIssues(prev => prev.map(i => i.id === issueId ? { ...i, afterImage: imageUrl, status: 'awaiting_citizen_verification', currentPercent: 95 } : i));
   }, []);
 
   const verifyIssueResolution = useCallback((issueId: string, isVerified: boolean) => {
-    setIssues(prev => prev.map(i => i.id === issueId ? { ...i, status: isVerified ? 'resolved' : 'in_progress' } : i));
+    setIssues(prev => prev.map(i => i.id === issueId ? { ...i, status: isVerified ? 'resolved' : 'in_progress', currentPercent: isVerified ? 100 : 85 } : i));
   }, []);
 
   const addBid = useCallback((bid: Bid) => { setBids(prev => [bid, ...prev]); }, []);
 
   const selectBid = useCallback((bidId: string, issueId: string, contractorId: string) => {
     setBids(prev => prev.map(b => b.issueId === issueId ? { ...b, status: b.id === bidId ? 'selected' : 'rejected' } : b));
-    setIssues(prev => prev.map(i => i.id === issueId ? { ...i, status: 'in_progress', assignedContractor: contractorId } : i));
+    setIssues(prev => prev.map(i => i.id === issueId ? { ...i, status: 'in_progress', assignedContractor: contractorId, currentPercent: 50 } : i));
   }, []);
 
   const addNgoRequest = useCallback((request: NgoRequest) => { setNgoRequests(prev => [request, ...prev]); }, []);
