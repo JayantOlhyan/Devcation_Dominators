@@ -3,6 +3,7 @@ import { useNavigate } from 'react-router';
 import { useApp, MOCK_USERS } from '../context/AppContext';
 import { useLang, Language, LANGUAGE_OPTIONS } from '../context/LanguageContext';
 import { DonationModal } from '../components/shared/DonationModal';
+import { BrandLogo } from '../components/shared/BrandLogo';
 
 const INDIA_GATE_BG = 'https://images.unsplash.com/photo-1766405532163-e38c3033f862?w=1920&q=80';
 
@@ -66,10 +67,8 @@ export default function Landing() {
 
         <header className="relative z-10 flex items-center justify-between px-6 py-4">
           <div className="flex items-center gap-3">
-            <div className="w-10 h-10 rounded-full flex items-center justify-center" style={{ background: '#E8821C' }}>
-              <span className="text-white text-lg">🏛</span>
-            </div>
-            <span className="text-white tracking-widest uppercase" style={{ fontSize: '1.5rem', fontWeight: 700, letterSpacing: '0.2em' }}>
+            <BrandLogo size="md" />
+            <span className="text-white tracking-widest uppercase" style={{ fontSize: '1.5rem', fontWeight: 800, letterSpacing: '0.2em' }}>
               {t('app.name')}
             </span>
           </div>
@@ -116,9 +115,12 @@ export default function Landing() {
             >
               <span className="text-sm">🇮🇳 {t('landing.hero.badge')}</span>
             </div>
+            <div className="mb-6 flex justify-center">
+              <BrandLogo size="xl" className="shadow-2xl border-4 border-white border-opacity-20" />
+            </div>
             <h1
               className="text-white mb-2 tracking-widest uppercase"
-              style={{ fontSize: 'clamp(2.5rem, 6vw, 5rem)', fontWeight: 800, letterSpacing: '0.15em', textShadow: '0 4px 20px rgba(0,0,0,0.5)' }}
+              style={{ fontSize: 'clamp(2rem, 5vw, 4rem)', fontWeight: 900, letterSpacing: '0.25em', textShadow: '0 4px 20px rgba(0,0,0,0.5)' }}
             >
               {t('app.name')}
             </h1>

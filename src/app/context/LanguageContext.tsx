@@ -231,6 +231,7 @@ const baseTranslations: Translations = {
   'citizen.summary.active': 'Active',
 
   'citizen.details.resolutionProof': 'Resolution Proof',
+  'citizen.details.allocatedBudget': 'Allocated Budget',
   'citizen.details.reviewBeforeAfter': 'Review Before & After',
   'citizen.details.communityRating': 'Community Rating',
   'citizen.details.frozen': '(Frozen)',
@@ -543,6 +544,7 @@ const hiTranslations: Partial<Translations> = {
   'citizen.summary.active': 'सक्रिय',
 
   'citizen.details.resolutionProof': 'समाधान प्रमाण',
+  'citizen.details.allocatedBudget': 'आवंटित बजट',
   'citizen.details.reviewBeforeAfter': 'पहले और बाद की समीक्षा करें',
   'citizen.details.communityRating': 'कम्युनिटी रेटिंग',
   'citizen.details.frozen': '(फ्रीज़)',
