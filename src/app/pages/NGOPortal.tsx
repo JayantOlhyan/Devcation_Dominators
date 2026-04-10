@@ -8,6 +8,7 @@ import { BeforeAfterModal } from '../components/shared/BeforeAfterModal';
 import { AssignedBadge } from '../components/shared/AssignedBadge';
 import { DuplicateBadge } from '../components/shared/DuplicateBadge';
 import { WorkProgressBar } from '../components/shared/WorkProgressBar';
+import { BrandLogo } from '../components/shared/BrandLogo';
 import { getLocalizedIssueCopy, getLocalizedStateName } from '../utils/issueLocalization';
 import { PieChart, Pie, Cell, BarChart, Bar, XAxis, YAxis, Tooltip, ResponsiveContainer, Legend } from 'recharts';
 import { getStateQualityRatings } from '../utils/stateQuality';
@@ -162,7 +163,14 @@ export default function NGOPortal() {
             </div>
 
             <div className="grid gap-4">
-              {unresolvedIssues.length === 0 && <div className="text-center py-16 text-gray-400">{t('ngo.issues.noIssues')}</div>}
+              {unresolvedIssues.length === 0 && (
+                <div className="text-center py-20 bg-white rounded-2xl border-2 border-dashed border-gray-200">
+                  <div className="flex justify-center mb-4 opacity-30">
+                    <BrandLogo size="lg" />
+                  </div>
+                  <p className="text-gray-400">{t('ngo.issues.noIssues')}</p>
+                </div>
+              )}
               {unresolvedIssues.map(issue => {
                 const hasRequest = requestedIssueIds.has(issue.id);
                 const myReq = myRequests.find(r => r.issueId === issue.id);
@@ -516,7 +524,9 @@ export default function NGOPortal() {
               <button onClick={() => setProfileOpen(false)} className="text-gray-400 text-xl">×</button>
             </div>
             <div className="text-center mb-4">
-              <div className="text-5xl mb-2">👥</div>
+              <div className="flex justify-center mb-3">
+                <BrandLogo size="md" />
+              </div>
               <p style={{ fontWeight: 700, color: '#0B1C2D' }}>{currentUser.ngoName}</p>
               <p className="text-sm text-gray-500">{currentUser.fullName}</p>
               <p className="text-xs text-gray-400">{currentUser.email}</p>

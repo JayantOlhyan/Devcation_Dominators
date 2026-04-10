@@ -3,6 +3,7 @@ import { useNavigate } from 'react-router';
 import { useApp, Issue } from '../context/AppContext';
 import { useLang } from '../context/LanguageContext';
 import { PortalHeader } from '../components/shared/PortalHeader';
+import { BrandLogo } from '../components/shared/BrandLogo';
 import { StatusBadge, UrgencyBadge, CategoryBadge } from '../components/shared/StatusBadge';
 import { BeforeAfterModal } from '../components/shared/BeforeAfterModal';
 import { AssignedBadge } from '../components/shared/AssignedBadge';
@@ -87,7 +88,7 @@ export default function AuthorityPortal() {
     { label: t('authority.kpi.openBidding'), value: openBidding, icon: '🔍', bg: '#EFF6FF', text: '#1D4ED8', border: '#BFDBFE' },
     { label: `🔴 ${t('authority.kpi.highUrgency')}`, value: highUrgency, icon: '⚠️', bg: '#FEF2F2', text: '#991B1B', border: '#FECACA' },
     { label: t('authority.kpi.suspicious'), value: suspicious, icon: '🚨', bg: '#FFF7ED', text: '#C2410C', border: '#FED7AA' },
-    { label: t('authority.kpi.total'), value: issues.length, icon: '📌', bg: '#F8FAFC', text: '#0B1C2D', border: '#E2E8F0' },
+    { label: t('authority.kpi.total'), value: issues.length, icon: <BrandLogo size="sm" />, bg: '#F8FAFC', text: '#0B1C2D', border: '#E2E8F0' },
   ];
 
   return (
@@ -538,19 +539,22 @@ export default function AuthorityPortal() {
       {/* Profile Modal */}
       {profileOpen && (
         <div className="fixed inset-0 z-50 flex items-center justify-center p-4" style={{ background: 'rgba(0,0,0,0.5)' }}>
-          <div className="bg-white rounded-2xl shadow-2xl p-6 w-full max-w-sm">
+          <div className="bg-white rounded-2xl shadow-2xl p-6 w-full max-w-sm relative overflow-hidden">
+            <BrandLogo size="lg" className="absolute -top-6 -right-6 opacity-5 rotate-12" />
             <div className="flex items-center justify-between mb-4">
-              <h3 style={{ color: '#0B1C2D', fontWeight: 700 }}>{t('authority.profile.title')}</h3>
+              <h3 style={{ color: '#0B1C2D', fontWeight: 700 }}>{t('common.profile')}</h3>
               <button onClick={() => setProfileOpen(false)} className="text-gray-400 text-xl">×</button>
             </div>
-            <div className="text-center">
-              <div className="text-5xl mb-2">👨🏻‍💼</div>
-              <p style={{ fontWeight: 600, color: '#0B1C2D' }}>{currentUser.fullName}</p>
-              <p className="text-sm text-gray-500">{currentUser.email}</p>
-              <p className="text-sm text-gray-500">{currentUser.city}, {currentUser.state}</p>
-               <div className="mt-3 px-4 py-2 rounded-xl" style={{ background: '#EFF6FF' }}>
-                <p className="text-xs text-blue-600">{t('authority.profile.role')}</p>
+            <div className="text-center mb-4">
+              <div className="flex justify-center mb-3">
+                <BrandLogo size="md" />
               </div>
+              <p style={{ fontWeight: 700, color: '#0B1C2D' }}>{currentUser.fullName}</p>
+              <p className="text-sm text-gray-500">{currentUser.email}</p>
+              <p className="text-xs text-gray-400 mt-1">{t('authority.role.verified')}</p>
+            </div>
+            <div className="mt-3 px-4 py-2 rounded-xl" style={{ background: '#EFF6FF' }}>
+              <p className="text-xs text-blue-600">{t('authority.profile.role')}</p>
             </div>
           </div>
         </div>

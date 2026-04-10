@@ -10,6 +10,7 @@ import { AssignedBadge } from '../components/shared/AssignedBadge';
 import { DonationModal } from '../components/shared/DonationModal';
 import { DuplicateBadge } from '../components/shared/DuplicateBadge';
 import { WorkProgressBar } from '../components/shared/WorkProgressBar';
+import { BrandLogo } from '../components/shared/BrandLogo';
 import { getLocalizedCityName, getLocalizedIssueCopy, getLocalizedStateName } from '../utils/issueLocalization';
 
 const STATES = ['Delhi', 'Maharashtra', 'Karnataka', 'Tamil Nadu', 'Gujarat', 'Rajasthan', 'Telangana', 'West Bengal', 'Uttar Pradesh', 'Madhya Pradesh'];
@@ -305,13 +306,60 @@ export default function CitizenPortal() {
         </form>}
         {activeTab === 'chat' && <div className="bg-white rounded-2xl shadow-sm overflow-hidden" style={{ border: '1px solid #E2E8F0', height: '70vh', display: 'flex', flexDirection: 'column' }}>
           <div className="px-4 py-3" style={{ background: '#0B1C2D' }}><p className="text-white" style={{ fontWeight: 600 }}>{t('citizen.chat.support')}</p><span className="text-green-300 text-xs">{t('common.online')}</span></div>
-          <div className="flex-1 overflow-y-auto p-4 space-y-3" style={{ background: '#ECE5DD' }}>{messages.map(message => <div key={message.id} className={`flex ${message.sender === 'user' ? 'justify-end' : 'justify-start'}`}><div className="max-w-xs sm:max-w-md rounded-2xl px-4 py-2.5 shadow-sm" style={{ background: message.sender === 'user' ? '#DCF8C6' : '#FFFFFF' }}><p className="text-sm">{message.text}</p><p className="text-right text-xs mt-1 text-gray-400">{message.time}</p></div></div>)}<div ref={endRef} /></div>
+          <div className="flex-1 overflow-y-auto p-4 space-y-3" style={{ background: '#ECE5DD' }}>
+            {messages.map(message => (
+              <div key={message.id} className={`flex gap-2 ${message.sender === 'user' ? 'justify-end' : 'justify-start'}`}>
+                {message.sender === 'support' && <BrandLogo size="sm" className="flex-shrink-0 mt-1" />}
+                <div className="max-w-xs sm:max-w-md rounded-2xl px-4 py-2.5 shadow-sm" style={{ background: message.sender === 'user' ? '#DCF8C6' : '#FFFFFF' }}>
+                  <p className="text-sm">{message.text}</p>
+                  <p className="text-right text-xs mt-1 text-gray-400">{message.time}</p>
+                </div>
+              </div>
+            ))}
+            <div ref={endRef} />
+          </div>
           <div className="p-3 flex gap-2" style={{ background: '#F0F0F0' }}><input className="flex-1 px-4 py-2.5 rounded-full text-sm outline-none" style={{ background: 'white', border: '1px solid #E2E8F0' }} value={newMessage} onChange={event => setNewMessage(event.target.value)} onKeyDown={event => event.key === 'Enter' && sendMessage()} placeholder={t('citizen.chat.placeholder')} /><button onClick={sendMessage} className="w-10 h-10 rounded-full text-white" style={{ background: '#25D366' }}>➤</button></div>
         </div>}
-        {activeTab === 'profile' && <div className="grid gap-4">
-          <div className="bg-white rounded-2xl shadow-sm p-6" style={{ border: '1px solid #E2E8F0' }}><h2 style={{ color: '#0B1C2D', fontWeight: 700 }}>{currentUser.fullName}</h2><p className="text-sm text-gray-500">{currentUser.email}</p><p className="text-xs text-gray-400 mb-4">{currentUser.phone}</p><div className="grid grid-cols-1 sm:grid-cols-2 gap-4">{[{ label: t('citizen.profile.trustCode'), value: currentUser.trustCode || 'N/A' }, { label: t('citizen.profile.location'), value: `${getLocalizedCityName(currentUser.city, language)}, ${getLocalizedStateName(currentUser.state, language)}` }, { label: t('citizen.profile.role'), value: t('citizen.profile.verifiedCitizen') }, { label: t('citizen.profile.issues'), value: myIssues.length.toString() }].map(item => <div key={item.label} className="p-4 rounded-xl" style={{ background: '#F8FAFC', border: '1px solid #E2E8F0' }}><p className="text-xs text-gray-500">{item.label}</p><p style={{ fontWeight: 600, color: '#0B1C2D' }}>{item.value}</p></div>)}</div></div>
-          <div className="bg-white rounded-2xl shadow-sm p-6" style={{ border: '1px solid #E2E8F0' }}><h3 className="mb-4" style={{ color: '#0B1C2D', fontWeight: 600 }}>{t('citizen.summary.title')}</h3><div className="grid grid-cols-3 gap-3">{[{ label: t('citizen.summary.total'), count: myIssues.length }, { label: t('citizen.summary.resolved'), count: myIssues.filter(issue => issue.status === 'resolved').length }, { label: t('citizen.summary.active'), count: myIssues.filter(issue => issue.status !== 'resolved').length }].map(item => <div key={item.label} className="p-4 rounded-xl text-center" style={{ background: '#EFF6FF' }}><p style={{ fontSize: '1.5rem', fontWeight: 700, color: '#0B1C2D' }}>{item.count}</p><p className="text-xs text-gray-500 mt-1">{item.label}</p></div>)}</div></div>
-        </div>}
+        {activeTab === 'profile' && (
+          <div className="bg-white rounded-2xl shadow-sm p-8 relative overflow-hidden" style={{ border: '1px solid #E2E8F0' }}>
+            <BrandLogo size="xl" className="absolute -top-6 -right-6 opacity-5 rotate-12" />
+            <div className="flex flex-col md:flex-row gap-8">
+              <div className="flex-1">
+                <h2 style={{ color: '#0B1C2D', fontWeight: 700 }}>{currentUser.fullName}</h2>
+                <p className="text-sm text-gray-500">{currentUser.email}</p>
+                <p className="text-xs text-gray-400 mb-4">{currentUser.phone}</p>
+                <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
+                  {[
+                    { label: t('citizen.profile.trustCode'), value: currentUser.trustCode || 'N/A' },
+                    { label: t('citizen.profile.location'), value: `${getLocalizedCityName(currentUser.city, language)}, ${getLocalizedStateName(currentUser.state, language)}` },
+                    { label: t('citizen.profile.role'), value: t('citizen.profile.verifiedCitizen') },
+                    { label: t('citizen.profile.issues'), value: myIssues.length.toString() }
+                  ].map(item => (
+                    <div key={item.label} className="p-4 rounded-xl" style={{ background: '#F8FAFC', border: '1px solid #E2E8F0' }}>
+                      <p className="text-xs text-gray-500">{item.label}</p>
+                      <p style={{ fontWeight: 600, color: '#0B1C2D' }}>{item.value}</p>
+                    </div>
+                  ))}
+                </div>
+              </div>
+            </div>
+            <div className="mt-8">
+              <h3 className="mb-4" style={{ color: '#0B1C2D', fontWeight: 600 }}>{t('citizen.summary.title')}</h3>
+              <div className="grid grid-cols-3 gap-3">
+                {[
+                  { label: t('citizen.summary.total'), count: myIssues.length },
+                  { label: t('citizen.summary.resolved'), count: myIssues.filter(issue => issue.status === 'resolved').length },
+                  { label: t('citizen.summary.active'), count: myIssues.filter(issue => issue.status !== 'resolved').length }
+                ].map(item => (
+                  <div key={item.label} className="p-4 rounded-xl text-center" style={{ background: '#EFF6FF' }}>
+                    <p style={{ fontSize: '1.5rem', fontWeight: 700, color: '#0B1C2D' }}>{item.count}</p>
+                    <p className="text-xs text-gray-500 mt-1">{item.label}</p>
+                  </div>
+                ))}
+              </div>
+            </div>
+          </div>
+        )}
       </div>
       {beforeAfterIssue && <BeforeAfterModal issue={beforeAfterIssue} onClose={() => setBeforeAfterIssue(null)} />}
       {localizedIssueDetails && <div className="fixed inset-0 z-50 flex items-center justify-center p-4" style={{ background: 'rgba(0,0,0,0.7)' }}><div className="bg-white rounded-2xl shadow-2xl w-full max-w-lg overflow-y-auto" style={{ maxHeight: '90vh' }}><div className="flex items-center justify-between p-5" style={{ background: '#0B1C2D' }}><h3 className="text-white" style={{ fontWeight: 700 }}>{t('citizen.issues.viewDetails')}</h3><button onClick={() => setSelectedIssue(null)} className="text-white text-2xl">×</button></div><div className="p-5 space-y-4"><img src={localizedIssueDetails.beforeImage} alt={localizedIssueDetails.title} className="w-full rounded-xl object-cover" style={{ height: 200 }} /><div className="flex flex-wrap gap-2"><StatusBadge status={localizedIssueDetails.status} /><UrgencyBadge urgency={localizedIssueDetails.urgencyTag} /><CategoryBadge category={localizedIssueDetails.category} /></div><div className="flex items-center gap-2"><h2 style={{ color: '#0B1C2D', fontWeight: 700 }}>{localizedIssueDetails.title}</h2><DuplicateBadge count={localizedIssueDetails.duplicateCount} /></div>

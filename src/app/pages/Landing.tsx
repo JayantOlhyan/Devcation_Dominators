@@ -180,7 +180,8 @@ export default function Landing() {
           </div>
         </main>
 
-        <footer className="relative z-10 text-center py-4" style={{ borderTop: '1px solid rgba(255,255,255,0.1)' }}>
+        <footer className="relative z-10 text-center py-6 flex flex-col items-center gap-3" style={{ borderTop: '1px solid rgba(255,255,255,0.1)' }}>
+          <BrandLogo size="sm" className="opacity-50 hover:opacity-100" />
           <p className="text-blue-200 text-sm tracking-widest uppercase" style={{ opacity: 0.7 }}>
             {t('landing.footer')}
           </p>
@@ -191,6 +192,9 @@ export default function Landing() {
         <div className="fixed inset-0 z-50 flex items-center justify-center p-4" style={{ background: 'rgba(0,0,0,0.7)' }}>
           <div className="bg-white rounded-2xl p-8 w-full max-w-md shadow-2xl" style={{ fontFamily: "'Poppins', sans-serif" }}>
             <div className="text-center mb-6">
+              <div className="flex justify-center mb-4">
+                <BrandLogo size="md" />
+              </div>
               <div className="text-5xl mb-3">{loginCards.find(card => card.role === loginModal.role)?.emoji}</div>
               <h2 className="text-2xl" style={{ color: '#0B1C2D', fontWeight: 700 }}>
                 {roleNames[loginModal.role]}

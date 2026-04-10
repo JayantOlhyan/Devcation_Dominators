@@ -9,6 +9,7 @@ import { AssignedBadge } from '../components/shared/AssignedBadge';
 import { DonationModal } from '../components/shared/DonationModal';
 import { DuplicateBadge } from '../components/shared/DuplicateBadge';
 import { WorkProgressBar } from '../components/shared/WorkProgressBar';
+import { BrandLogo } from '../components/shared/BrandLogo';
 import { getLocalizedIssueCopy } from '../utils/issueLocalization';
 
 const AFTER_IMAGES = {
@@ -314,15 +315,10 @@ export default function ContractorPortal() {
 
         {/* PROFILE */}
         {activeTab === 'profile' && (
-          <div className="grid gap-4 max-w-lg">
-            <div className="bg-white rounded-2xl shadow-sm p-6" style={{ border: '1px solid #E2E8F0' }}>
+          <div className="bg-white rounded-2xl shadow-sm p-8 relative overflow-hidden" style={{ border: '1px solid #E2E8F0' }}>
+            <BrandLogo size="xl" className="absolute -top-6 -right-6 opacity-5 rotate-12" />
+            <div className="flex flex-col md:flex-row gap-8">
               <div className="flex items-center gap-4 mb-5">
-                <div className="w-16 h-16 rounded-full flex items-center justify-center text-3xl" style={{ background: '#FFFBEB', border: '3px solid #FDE68A' }}>👨🏻‍🔧</div>
-                <div>
-                  <h2 style={{ color: '#0B1C2D', fontWeight: 700 }}>{currentUser.fullName}</h2>
-                  <p className="text-gray-500 text-sm">{currentUser.company}</p>
-                </div>
-              </div>
               <div className="space-y-3">
                 {[
                   { label: t('contractor.profile.company'), value: currentUser.company || 'N/A', icon: '🏗️' },
@@ -414,7 +410,9 @@ export default function ContractorPortal() {
               <button onClick={() => setProfileOpen(false)} className="text-gray-400 text-xl">×</button>
             </div>
             <div className="text-center">
-              <div className="text-5xl mb-2">👨🏻‍🔧</div>
+              <div className="flex justify-center mb-3">
+                <BrandLogo size="md" />
+              </div>
               <p style={{ fontWeight: 600, color: '#0B1C2D' }}>{currentUser.fullName}</p>
               <p className="text-sm text-gray-500">{currentUser.company}</p>
               <p className="text-xs text-gray-400 mt-1" style={{ fontFamily: 'monospace' }}>{currentUser.registrationId}</p>
