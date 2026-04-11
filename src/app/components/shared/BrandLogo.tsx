@@ -24,7 +24,7 @@ export function BrandLogo({ size = 'md', className = '', showText = false }: Bra
 
   return (
     <div className={`flex items-center gap-3 ${className}`}>
-      <div className={`relative flex items-center justify-center rounded-xl overflow-hidden bg-white shadow-sm transition-transform hover:scale-105 active:scale-95 ${sizeMap[size]}`}>
+      <div className={`relative flex items-center justify-center rounded-full overflow-hidden bg-white shadow-sm transition-transform hover:scale-105 active:scale-95 ${sizeMap[size]}`}>
         <img 
           src={logo} 
           alt="Civic Setu Logo"
