@@ -48,6 +48,9 @@ export default function ContractorPortal() {
   const myBids = bids.filter(b => b.contractorId === currentUser?.id);
   const selectedBidsCount = myBids.filter(b => b.status === 'selected').length;
   const earnings = myBids.filter(b => b.status === 'selected').reduce((sum, b) => sum + b.bidAmount, 0);
+  const projectsCompleted = myProjects.filter(p => p.status === 'resolved').length;
+  const projectsPending = myProjects.filter(p => p.status === 'in_progress' || p.status === 'awaiting_citizen_verification').length;
+  const projectsLeft = myBids.filter(b => b.status === 'submitted').length;
 
   const handleSubmitBid = (e: React.FormEvent) => {
     e.preventDefault();
@@ -172,15 +175,18 @@ export default function ContractorPortal() {
         {/* MY PROJECTS */}
         {activeTab === 'projects' && (
           <div>
-            <div className="grid grid-cols-2 gap-4 mb-6">
+            <div className="grid grid-cols-2 lg:grid-cols-5 gap-4 mb-6">
               {[
                 { label: t('contractor.projects.earnings'), value: `₹${earnings.toLocaleString('en-IN')}`, icon: '💰', bg: '#F0FDF4', text: '#15803D' },
-                { label: t('contractor.projects.won'), value: selectedBidsCount, icon: '🏆', bg: '#EFF6FF', text: '#1D4ED8' },
+                { label: t('contractor.projects.completion'), value: selectedBidsCount, icon: '🏆', bg: '#EFF6FF', text: '#1D4ED8' },
+                { label: t('contractor.projects.left'), value: projectsLeft, icon: '📉', bg: '#FDF2F2', text: '#B91C1C' },
+                { label: t('contractor.projects.completed'), value: projectsCompleted, icon: '✅', bg: '#F0FDF4', text: '#166534' },
+                { label: t('contractor.projects.pending'), value: projectsPending, icon: '⏳', bg: '#FFFBEB', text: '#92400E' },
               ].map(s => (
-                <div key={s.label} className="rounded-2xl p-5 shadow-sm" style={{ background: s.bg }}>
+                <div key={s.label} className="rounded-2xl p-4 shadow-sm text-center" style={{ background: s.bg }}>
                   <div className="text-2xl mb-2">{s.icon}</div>
-                  <p style={{ fontSize: '1.8rem', fontWeight: 700, color: s.text }}>{s.value}</p>
-                  <p style={{ fontSize: '0.75rem', color: s.text, opacity: 0.8 }}>{s.label}</p>
+                  <p style={{ fontSize: '1.6rem', fontWeight: 700, color: s.text }}>{s.value}</p>
+                  <p style={{ fontSize: '0.65rem', color: s.text, fontWeight: 600, textTransform: 'uppercase', tracking: '0.05em', opacity: 0.8 }}>{s.label}</p>
                 </div>
               ))}
             </div>
