@@ -44,7 +44,7 @@ export function BrandLogo({ size = 'md', className = '', showText = false }: Bra
             textShadow: '0 2px 4px rgba(0,0,0,0.1)'
           }}
         >
-          Civic <span style={{ color: '#E8821C' }}>Sense</span>
+          Civic <span style={{ color: '#E8821C' }}>Setu</span>
         </span>
       )}
     </div>
