@@ -42,7 +42,7 @@ const normalizeDetectedState = (raw: string) => STATES.find(state => {
 
 export default function CitizenPortal() {
   const navigate = useNavigate();
-  const { currentUser, issues, voteOnIssue, addIssue, rateContractor, verifyIssueResolution, comments, bids } = useApp();
+  const { currentUser, issues, voteOnIssue, addIssue, rateContractor, verifyIssueResolution, comments, bids, updateUserProfile } = useApp();
   const { language, t } = useLang();
   const [activeTab, setActiveTab] = useState<TabKey>('issues');
   const [beforeAfterIssue, setBeforeAfterIssue] = useState<Issue | null>(null);
@@ -62,6 +62,8 @@ export default function CitizenPortal() {
   const [locationMessage, setLocationMessage] = useState('');
   const [messages, setMessages] = useState([{ id: 1, sender: 'support', text: 'Hello! I am the CIVICSETU assistant.', time: '10:00 AM' }]);
   const [newMessage, setNewMessage] = useState('');
+  const [showAvatarSelection, setShowAvatarSelection] = useState(false);
+  const fileInputRef = useRef<HTMLInputElement>(null);
   const timerRef = useRef<ReturnType<typeof setInterval> | null>(null);
   const recognitionRef = useRef<any>(null);
   const mapContainerRef = useRef<HTMLDivElement | null>(null);
@@ -104,6 +106,28 @@ export default function CitizenPortal() {
     if (filterCategory !== 'all' && issue.category !== filterCategory) return false;
     return true;
   });
+
+  const DEFAULT_AVATARS = [
+    { id: 'male', url: '/assets/avatars/male.png', label: 'Male' },
+    { id: 'female', url: '/assets/avatars/female.png', label: 'Female' },
+  ];
+
+  const handleAvatarSelect = (url: string) => {
+    updateUserProfile(url);
+    setShowAvatarSelection(false);
+  };
+
+  const handleCustomUpload = (e: React.ChangeEvent<HTMLInputElement>) => {
+    const file = e.target.files?.[0];
+    if (file) {
+      const reader = new FileReader();
+      reader.onloadend = () => {
+        updateUserProfile(reader.result as string);
+        setShowAvatarSelection(false);
+      };
+      reader.readAsDataURL(file);
+    }
+  };
 
   const detectCurrentLocation = (automatic = false) => {
     if (!navigator.geolocation) {
@@ -323,21 +347,87 @@ export default function CitizenPortal() {
         {activeTab === 'profile' && (
           <div className="bg-white rounded-2xl shadow-sm p-8 relative overflow-hidden" style={{ border: '1px solid #E2E8F0' }}>
             <BrandLogo size="xl" className="absolute -top-6 -right-6 opacity-5 rotate-12" />
-            <div className="flex flex-col md:flex-row gap-8">
-              <div className="flex-1">
-                <h2 style={{ color: '#0B1C2D', fontWeight: 700 }}>{currentUser.fullName}</h2>
-                <p className="text-sm text-gray-500">{currentUser.email}</p>
-                <p className="text-xs text-gray-400 mb-4">{currentUser.phone}</p>
+            <div className="flex flex-col md:flex-row gap-8 items-start">
+              {/* Profile Picture Section */}
+              <div className="flex flex-col items-center gap-4 flex-shrink-0">
+                <div 
+                  className="relative group cursor-pointer"
+                  onClick={() => setShowAvatarSelection(!showAvatarSelection)}
+                >
+                  <div className="w-32 h-32 rounded-full border-4 border-slate-100 overflow-hidden bg-slate-50 flex items-center justify-center">
+                    {currentUser.profilePic ? (
+                      <img src={currentUser.profilePic} alt="Profile" className="w-full h-full object-cover" />
+                    ) : (
+                      <div className="flex flex-col items-center justify-center text-slate-300">
+                        <span className="text-5xl">👤</span>
+                        <p className="text-[10px] font-bold mt-1 uppercase tracking-tighter">Choose Photo</p>
+                      </div>
+                    )}
+                  </div>
+                  <div className="absolute inset-0 bg-black bg-opacity-40 rounded-full flex items-center justify-center opacity-0 group-hover:opacity-100 transition-opacity">
+                    <span className="text-white text-[10px] font-bold uppercase tracking-widest text-center px-2">{t('common.changePhoto')}</span>
+                  </div>
+                </div>
+
+                {showAvatarSelection && (
+                  <div className="bg-slate-50 p-4 rounded-xl border border-slate-100 space-y-4 w-48 shadow-lg animate-in fade-in slide-in-from-top-2 duration-200 z-10">
+                    <p className="text-[9px] font-bold text-slate-400 uppercase tracking-widest text-center">{t('common.selectDefault')}</p>
+                    <div className="flex gap-3 justify-center">
+                      {DEFAULT_AVATARS.map(avatar => (
+                        <button 
+                          key={avatar.id}
+                          onClick={() => handleAvatarSelect(avatar.url)}
+                          className="w-12 h-12 rounded-full border-2 border-white shadow-sm overflow-hidden hover:scale-110 transition-transform focus:ring-2 focus:ring-slate-400"
+                        >
+                          <img src={avatar.url} alt={avatar.label} className="w-full h-full object-cover" />
+                        </button>
+                      ))}
+                    </div>
+                    <div className="border-t border-slate-200 pt-3">
+                      <button 
+                        onClick={() => fileInputRef.current?.click()}
+                        className="w-full py-2 rounded-lg text-[10px] font-bold uppercase tracking-widest bg-white border border-slate-200 text-slate-600 hover:bg-slate-100 transition-colors"
+                      >
+                        📁 {t('common.uploadCustom')}
+                      </button>
+                      <input 
+                        type="file" 
+                        ref={fileInputRef} 
+                        onChange={handleCustomUpload} 
+                        className="hidden" 
+                        accept="image/*" 
+                      />
+                    </div>
+                    <button 
+                      onClick={() => setShowAvatarSelection(false)}
+                      className="w-full py-1 text-[9px] font-bold uppercase text-slate-400 hover:text-slate-600"
+                    >
+                      {t('common.cancel')}
+                    </button>
+                  </div>
+                )}
+              </div>
+
+              <div className="flex-1 w-full">
+                <div className="mb-6">
+                  <h2 className="text-2xl" style={{ color: '#0B1C2D', fontWeight: 700 }}>{currentUser.fullName}</h2>
+                  <p className="text-gray-500 font-medium">{currentUser.email}</p>
+                  <p className="text-sm text-gray-400 mt-1">{currentUser.phone}</p>
+                </div>
+                
                 <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
                   {[
-                    { label: t('citizen.profile.trustCode'), value: currentUser.trustCode || 'N/A' },
-                    { label: t('citizen.profile.location'), value: `${getLocalizedCityName(currentUser.city, language)}, ${getLocalizedStateName(currentUser.state, language)}` },
-                    { label: t('citizen.profile.role'), value: t('citizen.profile.verifiedCitizen') },
-                    { label: t('citizen.profile.issues'), value: myIssues.length.toString() }
+                    { label: t('citizen.profile.trustCode'), value: currentUser.trustCode || 'N/A', icon: '💎' },
+                    { label: t('citizen.profile.location'), value: `${getLocalizedCityName(currentUser.city, language)}, ${getLocalizedStateName(currentUser.state, language)}`, icon: '📍' },
+                    { label: t('citizen.profile.role'), value: t('citizen.profile.verifiedCitizen'), icon: '🛡️' },
+                    { label: t('citizen.profile.issues'), value: myIssues.length.toString(), icon: '📋' }
                   ].map(item => (
-                    <div key={item.label} className="p-4 rounded-xl" style={{ background: '#F8FAFC', border: '1px solid #E2E8F0' }}>
-                      <p className="text-xs text-gray-500">{item.label}</p>
-                      <p style={{ fontWeight: 600, color: '#0B1C2D' }}>{item.value}</p>
+                    <div key={item.label} className="p-4 rounded-xl flex items-center gap-4 transition-all hover:shadow-md" style={{ background: '#F8FAFC', border: '1px solid #E2E8F0' }}>
+                      <span className="text-2xl opacity-80">{item.icon}</span>
+                      <div>
+                        <p className="text-[10px] font-bold text-gray-400 uppercase tracking-widest">{item.label}</p>
+                        <p style={{ fontWeight: 600, color: '#0B1C2D' }}>{item.value}</p>
+                      </div>
                     </div>
                   ))}
                 </div>

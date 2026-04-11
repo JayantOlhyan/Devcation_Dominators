@@ -19,6 +19,7 @@ export interface AppUser {
   city?: string;
   registrationId?: string;
   rating?: number;
+  profilePic?: string;
 }
 
 export interface IssueReviewEvent {
@@ -357,6 +358,7 @@ interface AppContextType {
   addComment: (comment: Comment) => void;
   addDonation: (donation: Donation) => void;
   rateContractor: (issueId: string, rating: number) => void;
+  updateUserProfile: (profilePic: string) => void;
 }
 
 const AppContext = createContext<AppContextType | null>(null);
@@ -562,9 +564,16 @@ export function AppProvider({ children }: { children: ReactNode }) {
   const rateContractor = useCallback((issueId: string, rating: number) => {
     setIssues(prev => prev.map(i => i.id === issueId ? { ...i, contractorRating: rating } : i));
   }, []);
+  
+  const updateUserProfile = useCallback((profilePic: string) => {
+    if (!currentUser) return;
+    const updatedUser = { ...currentUser, profilePic };
+    setCurrentUser(updatedUser);
+    setUsers(prev => prev.map(u => u.id === currentUser.id ? updatedUser : u));
+  }, [currentUser]);
 
   return (
-    <AppContext.Provider value={{ users, issues, bids, ngoRequests, donations, comments, currentUser, setCurrentUser, addIssue, updateIssueStatus, updateAfterImage, submitResolutionProof, verifyIssueResolution, addBid, selectBid, addNgoRequest, updateNgoRequest, voteOnIssue, reviewFlaggedBatch, addComment, addDonation, rateContractor }}>
+    <AppContext.Provider value={{ users, issues, bids, ngoRequests, donations, comments, currentUser, setCurrentUser, addIssue, updateIssueStatus, updateAfterImage, submitResolutionProof, verifyIssueResolution, addBid, selectBid, addNgoRequest, updateNgoRequest, voteOnIssue, reviewFlaggedBatch, addComment, addDonation, rateContractor, updateUserProfile }}>
       {children}
     </AppContext.Provider>
   );
