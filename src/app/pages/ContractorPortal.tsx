@@ -313,30 +313,26 @@ export default function ContractorPortal() {
           </div>
         )}
 
-        {/* PROFILE */}
         {activeTab === 'profile' && (
           <div className="bg-white rounded-2xl shadow-sm p-8 relative overflow-hidden" style={{ border: '1px solid #E2E8F0' }}>
             <BrandLogo size="xl" className="absolute -top-6 -right-6 opacity-5 rotate-12" />
-            <div className="flex flex-col md:flex-row gap-8">
-              <div className="flex items-center gap-4 mb-5">
-              <div className="space-y-3">
-                {[
-                  { label: t('contractor.profile.company'), value: currentUser.company || 'N/A', icon: '🏗️' },
-                  { label: t('contractor.profile.regId'), value: currentUser.registrationId || 'N/A', icon: '📋', mono: true },
-                  { label: t('common.email'), value: currentUser.email, icon: '📧' },
-                  { label: t('common.phone'), value: currentUser.phone, icon: '📱' },
-                  { label: t('common.location'), value: `${currentUser.city}, ${currentUser.state}`, icon: '📍' },
-                  { label: t('contractor.profile.rating'), value: `${currentUser.rating}/5.0 ⭐`, icon: '⭐' },
-                ].map(item => (
-                  <div key={item.label} className="flex gap-3 p-3 rounded-xl" style={{ background: '#F8FAFC' }}>
-                    <span className="text-lg flex-shrink-0 mt-0.5">{item.icon}</span>
-                    <div>
-                      <p className="text-xs text-gray-400">{item.label}</p>
-                      <p style={{ fontWeight: 500, color: '#0B1C2D', fontFamily: item.mono ? 'monospace' : 'inherit' }}>{item.value}</p>
-                    </div>
+            <div className="space-y-3">
+              {[
+                { label: t('contractor.profile.company'), value: currentUser.company || 'N/A', icon: '🏗️' },
+                { label: t('contractor.profile.regId'), value: currentUser.registrationId || 'N/A', icon: '📋', mono: true },
+                { label: t('common.email'), value: currentUser.email, icon: '📧' },
+                { label: t('common.phone'), value: currentUser.phone, icon: '📱' },
+                { label: t('common.location'), value: `${currentUser.city}, ${currentUser.state}`, icon: '📍' },
+                { label: t('contractor.profile.rating'), value: `${currentUser.rating}/5.0 ⭐`, icon: '⭐' },
+              ].map(item => (
+                <div key={item.label} className="flex gap-3 p-3 rounded-xl" style={{ background: '#F8FAFC' }}>
+                  <span className="text-lg flex-shrink-0 mt-0.5">{item.icon}</span>
+                  <div>
+                    <p className="text-xs text-gray-400">{item.label}</p>
+                    <p style={{ fontWeight: 500, color: '#0B1C2D', fontFamily: item.mono ? 'monospace' : 'inherit' }}>{item.value}</p>
                   </div>
-                ))}
-              </div>
+                </div>
+              ))}
             </div>
           </div>
         )}
