@@ -210,13 +210,13 @@ export default function CitizenPortal() {
       <div className="sticky top-14 z-30 bg-white shadow-sm" style={{ borderBottom: '1px solid #E2E8F0' }}>
         <div className="max-w-4xl mx-auto flex overflow-x-auto">
           {([
-            { key: 'issues', label: t('citizen.tab.issues'), emoji: 'I' },
-            { key: 'report', label: t('citizen.tab.report'), emoji: '+' },
-            { key: 'chat', label: t('citizen.tab.chat'), emoji: 'C' },
-            { key: 'profile', label: t('citizen.tab.profile'), emoji: 'P' },
-          ] as { key: TabKey; label: string; emoji: string }[]).map(tab => (
+            { key: 'issues', label: t('citizen.tab.issues') },
+            { key: 'report', label: t('citizen.tab.report') },
+            { key: 'chat', label: t('citizen.tab.chat') },
+            { key: 'profile', label: t('citizen.tab.profile') },
+          ] as { key: TabKey; label: string }[]).map(tab => (
             <button key={tab.key} onClick={() => setActiveTab(tab.key)} className="px-5 py-3.5 text-sm whitespace-nowrap" style={{ color: activeTab === tab.key ? '#0B1C2D' : '#6B7280', borderBottom: activeTab === tab.key ? '3px solid #E8821C' : '3px solid transparent', fontWeight: activeTab === tab.key ? 600 : 400 }}>
-              {tab.emoji} {tab.label}
+              {tab.label}
             </button>
           ))}
         </div>
