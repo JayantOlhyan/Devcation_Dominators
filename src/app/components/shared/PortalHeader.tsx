@@ -33,12 +33,6 @@ export function PortalHeader({ title, subtitle, onProfileClick }: PortalHeaderPr
         <div className="flex items-center gap-3">
           <button onClick={() => navigate('/')} className="flex items-center gap-3 hover:opacity-90 transition-all">
             <BrandLogo size="sm" />
-            <div className="flex flex-col -gap-1 hidden sm:flex">
-              <span className="text-white tracking-tighter uppercase leading-none" style={{ fontWeight: 800, fontSize: '1.2rem' }}>
-                {t('app.name')}
-              </span>
-              <div className="h-0.5 w-full bg-[#E8821C] rounded-full" />
-            </div>
           </button>
           <div className="w-px h-6 bg-white opacity-20 mx-1" />
           <div>

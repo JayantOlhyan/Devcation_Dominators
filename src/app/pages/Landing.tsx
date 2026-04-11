@@ -68,9 +68,6 @@ export default function Landing() {
         <header className="relative z-10 flex items-center justify-between px-6 py-4">
           <div className="flex items-center gap-3">
             <BrandLogo size="md" />
-            <span className="text-white tracking-widest uppercase" style={{ fontSize: '1.5rem', fontWeight: 800, letterSpacing: '0.2em' }}>
-              {t('app.name')}
-            </span>
           </div>
 
           <div className="flex items-center gap-1">
@@ -118,12 +115,6 @@ export default function Landing() {
             <div className="mb-6 flex justify-center">
               <BrandLogo size="xl" className="shadow-2xl border-4 border-white border-opacity-20" />
             </div>
-            <h1
-              className="text-white mb-2 tracking-widest uppercase"
-              style={{ fontSize: 'clamp(2rem, 5vw, 4rem)', fontWeight: 900, letterSpacing: '0.25em', textShadow: '0 4px 20px rgba(0,0,0,0.5)' }}
-            >
-              {t('app.name')}
-            </h1>
             <p className="text-blue-100 max-w-xl mx-auto" style={{ fontSize: '1.1rem', opacity: 0.9 }}>
               {t('app.tagline')}
             </p>
