@@ -66,6 +66,8 @@ export interface Issue {
   isDuplicate: boolean;
   contractorRating: number | null;
   currentPercent: number;
+  initialBudget: number; // Authority's initial offer
+  estimatedTimeline: number | null; // Completion days
   createdAt: string;
 }
 
@@ -77,6 +79,7 @@ export interface Bid {
   bidAmount: number;
   proposalNote: string;
   status: 'submitted' | 'selected' | 'rejected';
+  estimatedTimeline: number; // Days
   createdAt: string;
 }
 
@@ -160,6 +163,8 @@ const hydrateIssue = (issue: IssueSeed): Issue => ({
   duplicateCount: issue.duplicateCount ?? 1,
   isDuplicate: issue.isDuplicate || (issue.duplicateCount ?? 1) > 1,
   currentPercent: getProgressForStatus(issue.status),
+  initialBudget: (issue as any).initialBudget ?? (Math.floor(Math.random() * 50) + 20) * 1000,
+  estimatedTimeline: (issue as any).estimatedTimeline ?? null,
 });
 
 const normalizeText = (value: string) => value.toLowerCase().replace(/[^a-z0-9\s]/g, ' ').replace(/\s+/g, ' ').trim();
@@ -300,11 +305,11 @@ const ISSUE_SEEDS: IssueSeed[] = [
 const INITIAL_ISSUES: Issue[] = ISSUE_SEEDS.map(hydrateIssue);
 
 const INITIAL_BIDS: Bid[] = [
-  { id: 'b1', issueId: 'i1', contractorId: 'u3', contractorName: 'BuildTech Solutions', bidAmount: 50000, proposalNote: 'Will repair using M30 grade concrete with proper drainage. 5-day completion guarantee.', status: 'selected', createdAt: getDate2026(1, 16, 10, 0) },
-  { id: 'b2', issueId: 'i5', contractorId: 'u3', contractorName: 'BuildTech Solutions', bidAmount: 65000, proposalNote: 'Full road resurfacing with hot mix asphalt. 7-day project timeline with school hours restriction.', status: 'selected', createdAt: getDate2026(2, 11, 9, 0) },
-  { id: 'b3', issueId: 'i6', contractorId: 'u3', contractorName: 'BuildTech Solutions', bidAmount: 75000, proposalNote: 'Full road patch repair with hot mix asphalt. Will complete within 3 days with reflective traffic cones.', status: 'selected', createdAt: getDate2026(2, 17, 11, 0) },
-  { id: 'b4', issueId: 'i10', contractorId: 'u3', contractorName: 'BuildTech Solutions', bidAmount: 120000, proposalNote: 'Comprehensive pothole & surface repair covering 200sqm. RCC filling with 30-day warranty.', status: 'submitted', createdAt: getDate2026(3, 2, 10, 0) },
-  { id: 'b5', issueId: 'i14', contractorId: 'u3', contractorName: 'BuildTech Solutions', bidAmount: 90000, proposalNote: 'Emergency pothole repair team deployed. Using bituminous macadam with quick-set material.', status: 'submitted', createdAt: getDate2026(3, 13, 9, 0) },
+  { id: 'b1', issueId: 'i1', contractorId: 'u3', contractorName: 'BuildTech Solutions', bidAmount: 50000, proposalNote: 'Will repair using M30 grade concrete with proper drainage. 5-day completion guarantee.', status: 'selected', estimatedTimeline: 5, createdAt: getDate2026(1, 16, 10, 0) },
+  { id: 'b2', issueId: 'i5', contractorId: 'u3', contractorName: 'BuildTech Solutions', bidAmount: 65000, proposalNote: 'Full road resurfacing with hot mix asphalt. 7-day project timeline with school hours restriction.', status: 'selected', estimatedTimeline: 7, createdAt: getDate2026(2, 11, 9, 0) },
+  { id: 'b3', issueId: 'i6', contractorId: 'u3', contractorName: 'BuildTech Solutions', bidAmount: 75000, proposalNote: 'Full road patch repair with hot mix asphalt. Will complete within 3 days with reflective traffic cones.', status: 'selected', estimatedTimeline: 3, createdAt: getDate2026(2, 17, 11, 0) },
+  { id: 'b4', issueId: 'i10', contractorId: 'u3', contractorName: 'BuildTech Solutions', bidAmount: 120000, proposalNote: 'Comprehensive pothole & surface repair covering 200sqm. RCC filling with 30-day warranty.', status: 'submitted', estimatedTimeline: 10, createdAt: getDate2026(3, 2, 10, 0) },
+  { id: 'b5', issueId: 'i14', contractorId: 'u3', contractorName: 'BuildTech Solutions', bidAmount: 90000, proposalNote: 'Emergency pothole repair team deployed. Using bituminous macadam with quick-set material.', status: 'submitted', estimatedTimeline: 4, createdAt: getDate2026(3, 13, 9, 0) },
 ];
 
 const INITIAL_NGO_REQUESTS: NgoRequest[] = [
@@ -430,9 +435,16 @@ export function AppProvider({ children }: { children: ReactNode }) {
   const addBid = useCallback((bid: Bid) => { setBids(prev => [bid, ...prev]); }, []);
 
   const selectBid = useCallback((bidId: string, issueId: string, contractorId: string) => {
+    const selectedBid = bids.find(b => b.id === bidId);
     setBids(prev => prev.map(b => b.issueId === issueId ? { ...b, status: b.id === bidId ? 'selected' : 'rejected' } : b));
-    setIssues(prev => prev.map(i => i.id === issueId ? { ...i, status: 'in_progress', assignedContractor: contractorId, currentPercent: 50 } : i));
-  }, []);
+    setIssues(prev => prev.map(i => i.id === issueId ? { 
+      ...i, 
+      status: 'in_progress', 
+      assignedContractor: contractorId, 
+      currentPercent: 50,
+      estimatedTimeline: selectedBid?.estimatedTimeline || null
+    } : i));
+  }, [bids]);
 
   const addNgoRequest = useCallback((request: NgoRequest) => { setNgoRequests(prev => [request, ...prev]); }, []);
 
