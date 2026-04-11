@@ -32,7 +32,7 @@ export function PortalHeader({ title, subtitle, onProfileClick }: PortalHeaderPr
       <div className="max-w-7xl mx-auto px-4 py-3 flex items-center justify-between">
         <div className="flex items-center gap-3">
           <button onClick={() => navigate('/')} className="flex items-center gap-3 hover:opacity-90 transition-all">
-            <BrandLogo size="sm" />
+            <BrandLogo size="sm" showText={true} />
           </button>
           <div className="w-px h-6 bg-white opacity-20 mx-1" />
           <div>

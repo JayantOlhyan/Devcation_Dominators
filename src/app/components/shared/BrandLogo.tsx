@@ -4,9 +4,10 @@ import logo from '@/assets/logo.png';
 interface BrandLogoProps {
   size?: 'sm' | 'md' | 'lg' | 'xl';
   className?: string;
+  showText?: boolean;
 }
 
-export function BrandLogo({ size = 'md', className = '' }: BrandLogoProps) {
+export function BrandLogo({ size = 'md', className = '', showText = false }: BrandLogoProps) {
   const sizeMap = {
     sm: 'w-8 h-8',
     md: 'w-12 h-12',
@@ -14,22 +15,37 @@ export function BrandLogo({ size = 'md', className = '' }: BrandLogoProps) {
     xl: 'w-48 h-48',
   };
 
+  const textSizeMap = {
+    sm: 'text-sm',
+    md: 'text-xl',
+    lg: 'text-3xl',
+    xl: 'text-5xl',
+  };
+
   return (
-    <div className={`relative flex items-center justify-center rounded-full overflow-hidden bg-white shadow-sm transition-transform hover:scale-105 active:scale-95 ${sizeMap[size]} ${className}`}>
-      {/* 
-        Note: Save the Civic Setu logo image you provided to:
-        /src/assets/logo.png 
-      */}
-      <img 
-        src={logo} 
-        alt="Civic Setu Logo"
-        className="w-full h-full object-cover"
-        onError={(e) => {
-          // Fallback if image not found yet
-          const target = e.target as HTMLImageElement;
-          target.src = 'https://ui-avatars.com/api/?name=Civic+Setu&background=E8821C&color=fff';
-        }}
-      />
+    <div className={`flex items-center gap-3 ${className}`}>
+      <div className={`relative flex items-center justify-center rounded-xl overflow-hidden bg-white shadow-sm transition-transform hover:scale-105 active:scale-95 ${sizeMap[size]}`}>
+        <img 
+          src={logo} 
+          alt="Civic Setu Logo"
+          className="w-full h-full object-cover"
+          onError={(e) => {
+            const target = e.target as HTMLImageElement;
+            target.src = 'https://ui-avatars.com/api/?name=Civic+Setu&background=E8821C&color=fff';
+          }}
+        />
+      </div>
+      {showText && (
+        <span 
+          className={`font-black tracking-tight text-white ${textSizeMap[size]}`}
+          style={{ 
+            fontFamily: "'Poppins', sans-serif",
+            textShadow: '0 2px 4px rgba(0,0,0,0.1)'
+          }}
+        >
+          Civic <span style={{ color: '#E8821C' }}>Sense</span>
+        </span>
+      )}
     </div>
   );
 }
