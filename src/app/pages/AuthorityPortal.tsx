@@ -439,8 +439,8 @@ export default function AuthorityPortal() {
 
       {/* Issue Detail Modal */}
       {selectedIssue && (
-        <div className="fixed inset-0 z-50 flex items-center justify-center p-4" style={{ background: 'rgba(0,0,0,0.7)' }}>
-          <div className="bg-white rounded-2xl shadow-2xl w-full max-w-2xl overflow-y-auto" style={{ maxHeight: '90vh' }}>
+        <div className="fixed inset-0 z-50 flex items-center justify-center p-4" style={{ background: 'rgba(0,0,0,0.7)' }} onClick={() => setSelectedIssue(null)}>
+          <div className="bg-white rounded-2xl shadow-2xl w-full max-w-2xl overflow-y-auto" style={{ maxHeight: '90vh' }} onClick={e => e.stopPropagation()}>
             <div className="flex items-center justify-between p-5" style={{ background: '#0B1C2D' }}>
               <h3 className="text-white" style={{ fontWeight: 700 }}>{t('common.details')}</h3>
               <button onClick={() => setSelectedIssue(null)} className="text-white text-2xl">×</button>

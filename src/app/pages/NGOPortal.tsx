@@ -445,8 +445,8 @@ export default function NGOPortal() {
 
       {/* Donation Modal */}
       {donationModal && (
-        <div className="fixed inset-0 z-50 flex items-center justify-center p-4" style={{ background: 'rgba(0,0,0,0.7)' }}>
-          <div className="bg-white rounded-2xl shadow-2xl w-full max-w-md">
+        <div className="fixed inset-0 z-50 flex items-center justify-center p-4 overflow-y-auto" style={{ background: 'rgba(0,0,0,0.7)' }} onClick={() => setDonationModal(false)}>
+          <div className="bg-white rounded-2xl shadow-2xl w-full max-w-lg" onClick={e => e.stopPropagation()}>
             <div className="flex items-center justify-between p-5" style={{ background: '#0B1C2D' }}>
               <div>
                 <h3 className="text-white" style={{ fontWeight: 700 }}>💰 {t('ngo.donationModal.title')}</h3>
@@ -517,8 +517,8 @@ export default function NGOPortal() {
 
       {/* Profile Modal */}
       {profileOpen && (
-        <div className="fixed inset-0 z-50 flex items-center justify-center p-4" style={{ background: 'rgba(0,0,0,0.5)' }}>
-          <div className="bg-white rounded-2xl shadow-2xl p-6 w-full max-w-sm">
+        <div className="fixed inset-0 z-50 flex items-center justify-center p-4" style={{ background: 'rgba(0,0,0,0.5)' }} onClick={() => setProfileOpen(false)}>
+          <div className="bg-white rounded-2xl shadow-2xl p-6 w-full max-w-sm" onClick={e => e.stopPropagation()}>
             <div className="flex items-center justify-between mb-4">
               <h3 style={{ color: '#0B1C2D', fontWeight: 700 }}>{t('ngo.profile.title')}</h3>
               <button onClick={() => setProfileOpen(false)} className="text-gray-400 text-xl">×</button>

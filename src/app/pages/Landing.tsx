@@ -180,8 +180,8 @@ export default function Landing() {
       </div>
 
       {loginModal && (
-        <div className="fixed inset-0 z-50 flex items-center justify-center p-4" style={{ background: 'rgba(0,0,0,0.7)' }}>
-          <div className="bg-white rounded-2xl p-8 w-full max-w-md shadow-2xl" style={{ fontFamily: "'Poppins', sans-serif" }}>
+        <div className="fixed inset-0 z-50 flex items-center justify-center p-4" style={{ background: 'rgba(0,0,0,0.7)' }} onClick={() => setLoginModal(null)}>
+          <div className="bg-white rounded-2xl p-8 w-full max-w-md shadow-2xl" style={{ fontFamily: "'Poppins', sans-serif" }} onClick={e => e.stopPropagation()}>
             <div className="text-center mb-6">
               <div className="flex justify-center mb-4">
                 <BrandLogo size="md" />

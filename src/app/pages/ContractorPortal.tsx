@@ -340,8 +340,8 @@ export default function ContractorPortal() {
 
       {/* Bid Submission Modal */}
       {selectedIssue && (
-        <div className="fixed inset-0 z-50 flex items-center justify-center p-4" style={{ background: 'rgba(0,0,0,0.7)' }}>
-          <div className="bg-white rounded-2xl shadow-2xl w-full max-w-md">
+        <div className="fixed inset-0 z-50 flex items-center justify-center p-4" style={{ background: 'rgba(0,0,0,0.7)' }} onClick={() => setSelectedIssue(null)}>
+          <div className="bg-white rounded-2xl shadow-2xl w-full max-w-md" onClick={e => e.stopPropagation()}>
             <div className="flex items-center justify-between p-5" style={{ background: '#0B1C2D' }}>
               <h3 className="text-white" style={{ fontWeight: 700 }}>{t('contractor.bidModal.title')}</h3>
               <button onClick={() => setSelectedIssue(null)} className="text-white text-2xl">×</button>
@@ -399,8 +399,8 @@ export default function ContractorPortal() {
       {beforeAfterIssue && <BeforeAfterModal issue={beforeAfterIssue} onClose={() => setBeforeAfterIssue(null)} />}
 
       {profileOpen && (
-        <div className="fixed inset-0 z-50 flex items-center justify-center p-4" style={{ background: 'rgba(0,0,0,0.5)' }}>
-          <div className="bg-white rounded-2xl shadow-2xl p-6 w-full max-w-sm">
+        <div className="fixed inset-0 z-50 flex items-center justify-center p-4" style={{ background: 'rgba(0,0,0,0.5)' }} onClick={() => setProfileOpen(false)}>
+          <div className="bg-white rounded-2xl shadow-2xl p-6 w-full max-w-sm" onClick={e => e.stopPropagation()}>
             <div className="flex items-center justify-between mb-4">
               <h3 style={{ color: '#0B1C2D', fontWeight: 700 }}>{t('contractor.profile.title')}</h3>
               <button onClick={() => setProfileOpen(false)} className="text-gray-400 text-xl">×</button>
