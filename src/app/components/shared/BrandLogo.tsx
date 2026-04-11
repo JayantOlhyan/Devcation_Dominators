@@ -1,5 +1,5 @@
 import React from 'react';
-import logo from '@/assets/logo.png';
+import logo from '@/assets/logo_v2.png';
 
 interface BrandLogoProps {
   size?: 'sm' | 'md' | 'lg' | 'xl';
@@ -24,11 +24,12 @@ export function BrandLogo({ size = 'md', className = '', showText = false }: Bra
 
   return (
     <div className={`flex items-center gap-3 ${className}`}>
-      <div className={`relative flex items-center justify-center rounded-full overflow-hidden transition-transform hover:scale-105 active:scale-95 ${sizeMap[size]}`}>
+      <div className={`relative flex items-center justify-center rounded-full overflow-hidden transition-transform hover:scale-105 active:scale-95 ${sizeMap[size]}`} style={{ background: 'transparent', border: 'none', outline: 'none' }}>
         <img 
           src={logo} 
-          alt="Civic Setu Logo"
+          alt="Civic Setu"
           className="w-full h-full object-cover"
+          style={{ border: 'none', outline: 'none', display: 'block' }}
           onError={(e) => {
             const target = e.target as HTMLImageElement;
             target.src = 'https://ui-avatars.com/api/?name=Civic+Setu&background=E8821C&color=fff';
